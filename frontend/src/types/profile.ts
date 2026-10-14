@@ -5,7 +5,6 @@ export interface Profile {
   user_id: string
   username: string
   email: string
-  programs: WorkoutProgram[] | null
   active_program: WorkoutProgram[] | null
   workout_streak: number
   workout_history: WorkoutTracker[]

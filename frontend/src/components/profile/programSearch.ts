@@ -1,44 +1,15 @@
-import { WorkoutProgram } from '@/types/programCreation'
-
 export const PROGRAMS_PER_PAGE = 5
 
-export interface SearchableProgram {
-  program: WorkoutProgram
-  searchKey: string
-}
+export const SEARCH_DEBOUNCE_MS = 180
 
-export const normalizeSearchText = (text: string): string =>
-  text
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim()
+export const normalizeSearchQuery = (query: string): string =>
+  query.trim().replace(/\s+/g, ' ').toLowerCase()
 
-export const buildSearchIndex = (
-  programs: WorkoutProgram[]
-): SearchableProgram[] =>
-  programs.map((program) => ({
-    program,
-    searchKey: normalizeSearchText(program.program_name)
-  }))
+export const pageCountFor = (total: number, pageSize: number): number =>
+  Math.ceil(total / pageSize)
 
-export const searchPrograms = (
-  index: SearchableProgram[],
-  query: string
-): WorkoutProgram[] => {
-  const terms = normalizeSearchText(query).split(' ').filter(Boolean)
-  if (terms.length === 0) return index.map(({ program }) => program)
-
-  return index
-    .filter(({ searchKey }) => terms.every((term) => searchKey.includes(term)))
-    .map(({ program }) => program)
-}
-
-export const paginate = <T>(items: T[], pageSize: number): T[][] => {
-  const pages: T[][] = []
-  for (let start = 0; start < items.length; start += pageSize) {
-    pages.push(items.slice(start, start + pageSize))
-  }
-  return pages
-}
+export const rowsOnPage = (
+  pageIndex: number,
+  total: number,
+  pageSize: number
+): number => Math.max(0, Math.min(pageSize, total - pageIndex * pageSize))

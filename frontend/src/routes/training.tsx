@@ -19,14 +19,6 @@ function RouteComponent() {
   const { data, isLoading, isError, isFetching, refetch } =
     useGetProfileDataQuery()
 
-  const refreshAfterProgramChange = async () => {
-    try {
-      await refetch()
-    } catch (error) {
-      console.error(error)
-    }
-  }
-
   const activeProgram = data?.active_program?.[0] ?? null
 
   return (
@@ -65,12 +57,7 @@ function RouteComponent() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:gap-6">
           <NextWorkout program={activeProgram} isLoading={isLoading} />
-          <ProgramsList
-            programs={data ? data.programs : null}
-            activeProgram={data ? data.active_program : null}
-            refreshProgramsList={refreshAfterProgramChange}
-            isLoading={isLoading}
-          />
+          <ProgramsList />
           <PreviousWorkouts />
         </div>
       )}

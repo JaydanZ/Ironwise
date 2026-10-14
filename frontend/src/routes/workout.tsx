@@ -2,7 +2,10 @@ import { useMemo } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { ArrowLeft } from 'lucide-react'
-import { useGetProfileDataQuery } from '@/services/protectedRoutesAPI'
+import {
+  useGetProfileDataQuery,
+  useGetProgramQuery
+} from '@/services/protectedRoutesAPI'
 import { WorkoutSession } from '@/components/workoutSession/WorkoutSession'
 import { Button } from '@/components/ui/button'
 import {
@@ -62,7 +65,10 @@ const SessionMessage = ({
 }) => (
   <section
     role="alert"
-    className={clsx(panelClass, 'flex flex-col items-start gap-5 px-4 py-8 sm:px-6')}
+    className={clsx(
+      panelClass,
+      'flex flex-col items-start gap-5 px-4 py-8 sm:px-6'
+    )}
   >
     <div>
       <p className="text-lg font-semibold text-neutral-50">{title}</p>
@@ -80,13 +86,14 @@ function RouteComponent() {
   const { data, isLoading, isError, isFetching, refetch } =
     useGetProfileDataQuery()
 
-  const program = useMemo(() => {
-    const candidates = [
-      ...(data?.active_program ?? []),
-      ...(data?.programs ?? [])
-    ]
-    return candidates.find((candidate) => candidate.id === programId) ?? null
-  }, [data, programId])
+  const activeProgram =
+    data?.active_program?.find((candidate) => candidate.id === programId) ??
+    null
+  // Usually the active program; any other saved program is fetched on its own
+  const otherProgram = useGetProgramQuery(programId, {
+    skip: !data || !programId || activeProgram !== null
+  })
+  const program = activeProgram ?? otherProgram.data ?? null
 
   const workout = useMemo(
     () =>
@@ -108,7 +115,7 @@ function RouteComponent() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 pb-56 pt-8 sm:px-8 min-[800px]:pb-16 min-[800px]:pt-28">
-      {isLoading ? (
+      {isLoading || otherProgram.isLoading ? (
         <SessionSkeleton />
       ) : isError ? (
         <SessionMessage

@@ -8,6 +8,11 @@ import { RootState } from '@/store/store'
 import { refreshAccessToken } from '@/features/auth/authSlice'
 import { genNewAccessToken } from './authAPI'
 import { Profile } from '@/types/profile'
+import {
+  ProgramPage,
+  ProgramPageArgs,
+  WorkoutProgram
+} from '@/types/programCreation'
 import { AuthorizedResponse, ChangePasswordRequest } from '@/types/auth'
 import {
   PreviousPerformance,
@@ -50,12 +55,35 @@ const protectedRoutesApi = async (
 
 export const protectedApiSlice = createApi({
   baseQuery: protectedRoutesApi,
-  tagTypes: ['Profile', 'PreviousPerformance', 'WorkoutHistory'],
+  tagTypes: [
+    'Profile',
+    'Programs',
+    'Program',
+    'PreviousPerformance',
+    'WorkoutHistory'
+  ],
   endpoints: (builder) => ({
     getProfileData: builder.query<Profile, void>({
       query: () => '/users/me',
       keepUnusedDataFor: 5,
       providesTags: ['Profile']
+    }),
+    getPrograms: builder.query<ProgramPage, ProgramPageArgs>({
+      query: ({ page, limit, q }) =>
+        `/programs?${new URLSearchParams({
+          page: String(page),
+          limit: String(limit),
+          q
+        })}`,
+      // Visited pages and searches stay cached so going back is instant
+      keepUnusedDataFor: 120,
+      providesTags: ['Programs']
+    }),
+    getProgram: builder.query<WorkoutProgram, string>({
+      query: (programId) => `/programs/${encodeURIComponent(programId)}`,
+      providesTags: (_result, _error, programId) => [
+        { type: 'Program', id: programId }
+      ]
     }),
     getPreviousPerformance: builder.query<
       PreviousPerformance,
@@ -90,6 +118,9 @@ export const protectedApiSlice = createApi({
 // Export generated hooks
 export const {
   useGetProfileDataQuery,
+  useGetProgramsQuery,
+  useGetProgramQuery,
+  usePrefetch,
   useGetPreviousPerformanceQuery,
   useGetWorkoutHistoryQuery,
   useSubmitWorkoutMutation,

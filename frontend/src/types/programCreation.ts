@@ -47,6 +47,27 @@ export interface WorkoutProgram {
   user_id: string
 }
 
+export interface ProgramSummary {
+  id: string
+  program_name: string
+  day_count: number
+  is_active: boolean
+  updated_at: string | null
+}
+
+export interface ProgramPage {
+  items: ProgramSummary[]
+  total: number
+  page: number
+  limit: number
+}
+
+export interface ProgramPageArgs {
+  page: number
+  limit: number
+  q: string
+}
+
 export interface ProgramActiveResponse {
   message: string
   program_id: string

@@ -1,12 +1,27 @@
 import logging
 import ast
+from typing import Annotated
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from ..models.programGeneration import ProgramOptions
 from ..utils.programGenerator import generate_program, ProgramGenerationError
 from ..models.programs import ProgramImport
-from ..models.programRules import PROGRAM_SAVE_RATE_LIMIT
-from ..Database.programs import insert_program_from_import, delete_program, update_program
+from ..models.programRules import (
+    PROGRAM_SAVE_RATE_LIMIT,
+    PROGRAMS_PAGE_DEFAULT_LIMIT,
+    PROGRAMS_PAGE_MAX_LIMIT,
+    PROGRAMS_PAGE_MAX,
+    PROGRAM_SEARCH_MAX_LENGTH,
+    PROGRAM_SEARCH_MAX_TERMS,
+)
+from ..Database.programs import (
+    insert_program_from_import,
+    delete_program,
+    update_program,
+    get_owned_program,
+    get_program_summaries_page,
+)
+from ..utils.programs import program_search_terms
 from ..Database.users import find_user_by_id, set_users_active_program
 from ..middleware.authenticateToken import get_current_user
 from ..utils.limiter import limiter, user_and_ip_key
@@ -18,6 +33,34 @@ programs_router = APIRouter(
     prefix="/programs",
     tags=["programs"]
 )
+
+@programs_router.get("", status_code=200)
+async def list_programs_route(
+    page: Annotated[int, Query(ge=0, le=PROGRAMS_PAGE_MAX)] = 0,
+    limit: Annotated[int, Query(ge=1, le=PROGRAMS_PAGE_MAX_LIMIT)] = PROGRAMS_PAGE_DEFAULT_LIMIT,
+    q: Annotated[str, Query(max_length=PROGRAM_SEARCH_MAX_LENGTH)] = "",
+    user_id: str = Depends(get_current_user)
+):
+    user = find_user_by_id(user_id) or {}
+    response = get_program_summaries_page(
+        user_id,
+        user.get("active_program"),
+        page,
+        limit,
+        program_search_terms(q, PROGRAM_SEARCH_MAX_TERMS),
+    )
+    if not response["success"]:
+        logger.error("Failed to load programs: %s", response.get("error"))
+        raise HTTPException(status_code=500, detail="Failed to load programs")
+
+    return response["data"]
+
+@programs_router.get("/{program_id}", status_code=200)
+async def get_program_route(program_id: UUID, user_id: str = Depends(get_current_user)):
+    program = get_owned_program(str(program_id), user_id)
+    if program is None:
+        raise HTTPException(status_code=404, detail="Program not found")
+    return program
 
 @programs_router.delete("/{program_id}", status_code=200)
 async def delete_program_route(program_id: str, user_id: str = Depends(get_current_user)):

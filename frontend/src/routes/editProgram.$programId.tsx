@@ -1,7 +1,7 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { ArrowLeft } from 'lucide-react'
-import { useGetProfileDataQuery } from '@/services/protectedRoutesAPI'
+import { useGetProgramQuery } from '@/services/protectedRoutesAPI'
 import { ManualProgramCreation } from '@/components/programCreation/ManualProgramCreation'
 import { panelClass } from '@/components/profile/profileStyles'
 import { Spinner } from '@/components/ui/spinner'
@@ -22,8 +22,10 @@ export const Route = createFileRoute('/editProgram/$programId')({
 
 function RouteComponent() {
   const { programId } = Route.useParams()
-  const { data, isLoading, isError } = useGetProfileDataQuery()
-  const program = data?.programs?.find((program) => program.id === programId)
+  const { data: program, isLoading, error } = useGetProgramQuery(programId)
+  // A 404 means the program is gone; anything else is worth retrying
+  const isError =
+    error !== undefined && !('status' in error && error.status === 404)
 
   return (
     <main className="mx-auto flex w-full max-w-3xl justify-center px-4 pb-32 pt-8 sm:px-8 min-[800px]:pb-16 min-[800px]:pt-28">

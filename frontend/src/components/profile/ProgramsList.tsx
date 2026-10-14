@@ -1,8 +1,7 @@
 import {
   useCallback,
-  useDeferredValue,
+  useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
   memo,
@@ -28,9 +27,11 @@ import {
   X
 } from 'lucide-react'
 import { setProgramActive, deleteProgram } from '@/services/programsAPI'
-import { WorkoutProgram } from '@/types/programCreation'
+import { useGetProgramsQuery, usePrefetch } from '@/services/protectedRoutesAPI'
+import { ProgramSummary } from '@/types/programCreation'
 import { toast } from '@/hooks/use-toast'
 import { Button } from '../ui/button'
+import { Spinner } from '../ui/spinner'
 import {
   Dialog,
   DialogClose,
@@ -48,31 +49,23 @@ import {
   panelTitleClass,
   skeletonClass
 } from './profileStyles'
-import { orderProgramsActiveFirst } from './programOrder'
 import {
-  buildSearchIndex,
-  paginate,
+  normalizeSearchQuery,
+  pageCountFor,
   PROGRAMS_PER_PAGE,
-  searchPrograms
+  rowsOnPage,
+  SEARCH_DEBOUNCE_MS
 } from './programSearch'
 
 const EASE_OUT_STRONG = [0.23, 1, 0.32, 1] as const
-// A swipe pages over once it travels this share of the width, or is flicked
 const SWIPE_DISTANCE_RATIO = 0.2
 const SWIPE_VELOCITY = 400
 
 interface ProgramRowProps {
-  program: WorkoutProgram
+  program: ProgramSummary
   isActive: boolean
-  setActive: (program: WorkoutProgram) => Promise<boolean>
+  setActive: (program: ProgramSummary) => Promise<boolean>
   deleteProgram: (programId: string) => Promise<boolean>
-}
-
-interface ProgramsListProps {
-  programs: WorkoutProgram[] | null
-  activeProgram: WorkoutProgram[] | null
-  refreshProgramsList: () => void
-  isLoading?: boolean
 }
 
 export const ProgramRow = memo((props: ProgramRowProps): ReactElement => {
@@ -82,7 +75,7 @@ export const ProgramRow = memo((props: ProgramRowProps): ReactElement => {
   const [deleteError, setDeleteError] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  const dayCount = props.program.program_structure.length
+  const dayCount = props.program.day_count
 
   const handleSetActive = async () => {
     setIsActivating(true)
@@ -216,30 +209,35 @@ export const ProgramRow = memo((props: ProgramRowProps): ReactElement => {
 
 ProgramRow.displayName = 'ProgramRow'
 
+const SkeletonRows = ({ count }: { count: number }) =>
+  Array.from({ length: count }, (_, index) => (
+    <li
+      key={index}
+      aria-hidden
+      className="flex min-h-[4.5rem] items-center gap-3 px-4 py-3 sm:px-6"
+    >
+      <div className="flex-1">
+        <div className={clsx(skeletonClass, 'h-4 w-2/5')} />
+        <div className={clsx(skeletonClass, 'mt-2 h-3 w-24')} />
+      </div>
+      <div className={clsx(skeletonClass, 'size-8')} />
+      <div className={clsx(skeletonClass, 'size-8')} />
+    </li>
+  ))
+
 const ProgramsSkeleton = () => (
   <ul aria-hidden className="divide-y divide-neutral-800">
-    {Array.from({ length: 3 }).map((_, index) => (
-      <li
-        key={index}
-        className="flex min-h-[4.5rem] items-center gap-3 px-4 py-3 sm:px-6"
-      >
-        <div className="flex-1">
-          <div className={clsx(skeletonClass, 'h-4 w-2/5')} />
-          <div className={clsx(skeletonClass, 'mt-2 h-3 w-24')} />
-        </div>
-        <div className={clsx(skeletonClass, 'size-8')} />
-        <div className={clsx(skeletonClass, 'size-8')} />
-      </li>
-    ))}
+    <SkeletonRows count={3} />
   </ul>
 )
 
 interface SearchBarProps {
   query: string
+  isPending: boolean
   onQueryChange: (query: string) => void
 }
 
-const SearchBar = ({ query, onQueryChange }: SearchBarProps) => {
+const SearchBar = ({ query, isPending, onQueryChange }: SearchBarProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -258,10 +256,18 @@ const SearchBar = ({ query, onQueryChange }: SearchBarProps) => {
       className="border-b border-neutral-800 px-4 py-3 sm:px-6"
     >
       <div className="relative">
-        <Search
-          aria-hidden
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500"
-        />
+        {isPending ? (
+          <Spinner
+            aria-hidden
+            role="presentation"
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500"
+          />
+        ) : (
+          <Search
+            aria-hidden
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500"
+          />
+        )}
         <input
           ref={inputRef}
           type="search"
@@ -298,6 +304,7 @@ interface PageDotsProps {
   pageCount: number
   pageIndex: number
   onPageChange: (index: number) => void
+  onPageIntent: (index: number) => void
 }
 
 const pagerArrowClass = cn(
@@ -305,7 +312,12 @@ const pagerArrowClass = cn(
   '[-webkit-tap-highlight-color:transparent] aria-disabled:pointer-events-none aria-disabled:opacity-30'
 )
 
-const PageDots = ({ pageCount, pageIndex, onPageChange }: PageDotsProps) => {
+const PageDots = ({
+  pageCount,
+  pageIndex,
+  onPageChange,
+  onPageIntent
+}: PageDotsProps) => {
   const isFirst = pageIndex === 0
   const isLast = pageIndex === pageCount - 1
 
@@ -338,6 +350,9 @@ const PageDots = ({ pageCount, pageIndex, onPageChange }: PageDotsProps) => {
               key={index}
               type="button"
               onClick={() => onPageChange(index)}
+              // Start loading a far page on hover so the click lands on data
+              onPointerEnter={() => onPageIntent(index)}
+              onFocus={() => onPageIntent(index)}
               aria-label={`Page ${index + 1} of ${pageCount}`}
               aria-current={isCurrent ? 'page' : undefined}
               className="group grid h-10 w-6 place-items-center rounded-md outline-none [-webkit-tap-highlight-color:transparent] focus-visible:ring-1 focus-visible:ring-app-colors-300"
@@ -368,47 +383,138 @@ const PageDots = ({ pageCount, pageIndex, onPageChange }: PageDotsProps) => {
   )
 }
 
-export const ProgramsList = (props: ProgramsListProps): ReactElement => {
+interface ProgramPageRowsProps {
+  pageIndex: number
+  query: string
+  expectedRows: number
+  optimisticActiveId: string | null
+  setActive: (program: ProgramSummary) => Promise<boolean>
+  deleteProgram: (programId: string) => Promise<boolean>
+}
+
+// Each sliding page reads its own cache entry, so the outgoing page keeps its
+// rows while the incoming one shows placeholders until its data arrives
+const ProgramPageRows = (props: ProgramPageRowsProps) => {
+  const { data, isError, refetch } = useGetProgramsQuery({
+    page: props.pageIndex,
+    limit: PROGRAMS_PER_PAGE,
+    q: props.query
+  })
+
+  if (!data && isError) {
+    return (
+      <li className="px-4 py-6 sm:px-6">
+        <p role="alert" className="text-sm text-neutral-300">
+          Couldn&rsquo;t load this page.
+        </p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="-ml-2 mt-1 inline-flex h-10 items-center rounded-md px-2 text-sm font-medium text-app-colors-300 outline-none transition-colors duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-neutral-800/70 focus-visible:ring-1 focus-visible:ring-app-colors-300"
+        >
+          Try again
+        </button>
+      </li>
+    )
+  }
+
+  if (!data) return <SkeletonRows count={props.expectedRows} />
+
+  return data.items.map((program) => (
+    <ProgramRow
+      program={program}
+      key={program.id}
+      isActive={
+        props.optimisticActiveId
+          ? program.id === props.optimisticActiveId
+          : program.is_active
+      }
+      setActive={props.setActive}
+      deleteProgram={props.deleteProgram}
+    />
+  ))
+}
+
+export const ProgramsList = (): ReactElement => {
   const [optimisticActiveId, setOptimisticActiveId] = useState<string | null>(
     null
   )
   const [query, setQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState({ index: 0, direction: 0 })
+  const [pageHeight, setPageHeight] = useState<number | null>(null)
   const prefersReducedMotion = useReducedMotion()
   const dragControls = useDragControls()
   const pagerRef = useRef<HTMLDivElement>(null)
   const didDragRef = useRef(false)
-  const [pageHeight, setPageHeight] = useState<number | null>(null)
-  const { refreshProgramsList } = props
+  const prefetchPrograms = usePrefetch('getPrograms', { ifOlderThan: 60 })
 
-  // Typing stays instant; filtering the list follows at React's lower priority
-  const deferredQuery = useDeferredValue(query)
+  // Every saved program, unfiltered: drives the empty state and the count
+  const allPrograms = useGetProgramsQuery({
+    page: 0,
+    limit: PROGRAMS_PER_PAGE,
+    q: ''
+  })
+  // `data` holds the previous result while a new page or search loads, so the
+  // dots and count stay put; `currentData` is only the result for these args
+  const { data, currentData, isFetching } = useGetProgramsQuery({
+    page: page.index,
+    limit: PROGRAMS_PER_PAGE,
+    q: searchQuery
+  })
 
-  const activeProgramId =
-    optimisticActiveId ?? props.activeProgram?.[0]?.id ?? null
-  const programCount = props.programs?.length ?? 0
+  const programCount = allPrograms.data?.total ?? 0
+  const matchCount = data?.total ?? 0
+  const pageCount = pageCountFor(matchCount, PROGRAMS_PER_PAGE)
+  const pageIndex = page.index
+  const isSearching = searchQuery !== ''
+  const typedQuery = normalizeSearchQuery(query)
+  const isSearchPending =
+    typedQuery !== searchQuery || (isSearching && isFetching && !currentData)
+  const showsStaleResults = isFetching && !currentData && pageIndex === 0
 
-  const searchIndex = useMemo(
-    () =>
-      buildSearchIndex(
-        orderProgramsActiveFirst(props.programs ?? [], activeProgramId)
-      ),
-    [props.programs, activeProgramId]
+  // Only hit the server once typing pauses; clearing the search is immediate
+  useEffect(() => {
+    if (typedQuery === searchQuery) return
+    const timer = setTimeout(
+      () => {
+        setSearchQuery(typedQuery)
+        setPage({ index: 0, direction: 0 })
+      },
+      typedQuery ? SEARCH_DEBOUNCE_MS : 0
+    )
+    return () => clearTimeout(timer)
+  }, [typedQuery, searchQuery])
+
+  // Deleting the only program on the last page leaves it empty
+  useEffect(() => {
+    if (!currentData || pageIndex === 0) return
+    const lastPage = Math.max(
+      pageCountFor(currentData.total, PROGRAMS_PER_PAGE) - 1,
+      0
+    )
+    if (pageIndex > lastPage) setPage({ index: lastPage, direction: -1 })
+  }, [currentData, pageIndex])
+
+  const prefetchPage = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= pageCount) return
+      prefetchPrograms({
+        page: index,
+        limit: PROGRAMS_PER_PAGE,
+        q: searchQuery
+      })
+    },
+    [prefetchPrograms, pageCount, searchQuery]
   )
-  const matchingPrograms = useMemo(
-    () => searchPrograms(searchIndex, deferredQuery),
-    [searchIndex, deferredQuery]
-  )
-  const pages = useMemo(
-    () => paginate(matchingPrograms, PROGRAMS_PER_PAGE),
-    [matchingPrograms]
-  )
 
-  const pageIndex = Math.min(page.index, Math.max(pages.length - 1, 0))
-  const pageCount = pages.length
-  const isSearching = deferredQuery.trim().length > 0
+  useEffect(() => {
+    if (!currentData) return
+    prefetchPage(pageIndex + 1)
+    prefetchPage(pageIndex - 1)
+  }, [currentData, pageIndex, prefetchPage])
+
   const hasPages = pageCount > 0
-
   useLayoutEffect(() => {
     const pageNode = pagerRef.current?.querySelector<HTMLElement>(
       `[data-page="${pageIndex}"]`
@@ -422,13 +528,8 @@ export const ProgramsList = (props: ProgramsListProps): ReactElement => {
   }, [pageIndex, hasPages])
 
   const goToPage = (index: number) => {
-    if (index === pageIndex) return
+    if (index === pageIndex || index < 0 || index >= pageCount) return
     setPage({ index, direction: index > pageIndex ? 1 : -1 })
-  }
-
-  const handleQueryChange = (nextQuery: string) => {
-    setQuery(nextQuery)
-    setPage({ index: 0, direction: 0 })
   }
 
   const handleSwipeEnd = (_: unknown, { offset, velocity }: PanInfo) => {
@@ -437,43 +538,34 @@ export const ProgramsList = (props: ProgramsListProps): ReactElement => {
       Math.abs(offset.x) > width * SWIPE_DISTANCE_RATIO ||
       Math.abs(velocity.x) > SWIPE_VELOCITY
     if (!swiped) return
-    if (offset.x < 0 && pageIndex < pageCount - 1) goToPage(pageIndex + 1)
-    if (offset.x > 0 && pageIndex > 0) goToPage(pageIndex - 1)
+    goToPage(offset.x < 0 ? pageIndex + 1 : pageIndex - 1)
   }
 
-  const handleSetActive = useCallback(
-    async (program: WorkoutProgram) => {
-      try {
-        const { program_id } = await setProgramActive(program)
-        setOptimisticActiveId(program_id)
-        toast({
-          variant: 'success',
-          title: 'Active program updated',
-          description: `${program.program_name} is now your active program.`
-        })
-        refreshProgramsList()
-        return true
-      } catch (error) {
-        console.error(error)
-        return false
-      }
-    },
-    [refreshProgramsList]
-  )
+  const handleSetActive = useCallback(async (program: ProgramSummary) => {
+    try {
+      const { program_id } = await setProgramActive(program)
+      setOptimisticActiveId(program_id)
+      toast({
+        variant: 'success',
+        title: 'Active program updated',
+        description: `${program.program_name} is now your active program.`
+      })
+      return true
+    } catch (error) {
+      console.error(error)
+      return false
+    }
+  }, [])
 
-  const handleDeleteProgram = useCallback(
-    async (programId: string) => {
-      try {
-        await deleteProgram(programId)
-        refreshProgramsList()
-        return true
-      } catch (error) {
-        console.error(error)
-        return false
-      }
-    },
-    [refreshProgramsList]
-  )
+  const handleDeleteProgram = useCallback(async (programId: string) => {
+    try {
+      await deleteProgram(programId)
+      return true
+    } catch (error) {
+      console.error(error)
+      return false
+    }
+  }, [])
 
   const pageVariants = {
     enter: (direction: number) =>
@@ -489,9 +581,8 @@ export const ProgramsList = (props: ProgramsListProps): ReactElement => {
 
   const statusText = [
     isSearching &&
-      `${matchingPrograms.length} ${
-        matchingPrograms.length === 1 ? 'program' : 'programs'
-      } found.`,
+      data &&
+      `${matchCount} ${matchCount === 1 ? 'program' : 'programs'} found.`,
     pageCount > 1 && `Page ${pageIndex + 1} of ${pageCount}.`
   ]
     .filter(Boolean)
@@ -503,17 +594,34 @@ export const ProgramsList = (props: ProgramsListProps): ReactElement => {
         <h2 id="programs-title" className={panelTitleClass}>
           Saved programs
         </h2>
-        {!props.isLoading && programCount > 0 && (
+        {programCount > 0 && (
           <span className="text-sm tabular-nums text-neutral-400">
-            {isSearching
-              ? `${matchingPrograms.length} of ${programCount}`
+            {isSearching && data
+              ? `${matchCount} of ${programCount}`
               : programCount}
           </span>
         )}
       </div>
 
-      {props.isLoading ? (
+      {allPrograms.isLoading ? (
         <ProgramsSkeleton />
+      ) : allPrograms.isError && !allPrograms.data ? (
+        <div className="px-4 py-8 sm:px-6">
+          <p role="alert" className="font-medium text-neutral-100">
+            We couldn&rsquo;t load your programs
+          </p>
+          <p className="mt-1 text-sm text-neutral-400">
+            Check your connection, then try again.
+          </p>
+          <Button
+            variant="ghost"
+            onClick={() => allPrograms.refetch()}
+            disabled={allPrograms.isFetching}
+            className="mt-4 h-10 border border-neutral-700 px-4 text-neutral-100 transition-[transform,background-color] duration-150 hover:bg-neutral-800/70 active:scale-[0.97]"
+          >
+            {allPrograms.isFetching ? 'Retrying...' : 'Try again'}
+          </Button>
+        </div>
       ) : programCount === 0 ? (
         <div className="px-4 py-8 sm:px-6">
           <p className="font-medium text-neutral-100">No saved programs</p>
@@ -524,23 +632,27 @@ export const ProgramsList = (props: ProgramsListProps): ReactElement => {
         </div>
       ) : (
         <>
-          <SearchBar query={query} onQueryChange={handleQueryChange} />
+          <SearchBar
+            query={query}
+            isPending={isSearchPending}
+            onQueryChange={setQuery}
+          />
 
           <p role="status" className="sr-only">
             {statusText}
           </p>
 
-          {pageCount === 0 ? (
+          {isSearching && data && matchCount === 0 ? (
             <div className="px-4 py-8 sm:px-6">
               <p className="break-words font-medium text-neutral-100">
-                No programs match &ldquo;{deferredQuery.trim()}&rdquo;
+                No programs match &ldquo;{query.trim()}&rdquo;
               </p>
               <p className="mt-1 text-sm text-neutral-400">
                 Check the spelling or try part of the name.
               </p>
               <button
                 type="button"
-                onClick={() => handleQueryChange('')}
+                onClick={() => setQuery('')}
                 className="-ml-2 mt-2 inline-flex h-10 items-center rounded-md px-2 text-sm font-medium text-app-colors-300 outline-none transition-colors duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-neutral-800/70 focus-visible:ring-1 focus-visible:ring-app-colors-300"
               >
                 Clear search
@@ -557,7 +669,11 @@ export const ProgramsList = (props: ProgramsListProps): ReactElement => {
                     page.direction === 0 || prefersReducedMotion ? 0 : 0.4,
                   ease: EASE_OUT_STRONG
                 }}
-                className="relative overflow-hidden"
+                aria-busy={isFetching}
+                className={cn(
+                  'relative overflow-hidden transition-opacity duration-150',
+                  showsStaleResults && 'opacity-60'
+                )}
               >
                 <AnimatePresence
                   initial={false}
@@ -602,15 +718,17 @@ export const ProgramsList = (props: ProgramsListProps): ReactElement => {
                     }}
                     className="w-full touch-pan-y divide-y divide-neutral-800"
                   >
-                    {pages[pageIndex].map((program) => (
-                      <ProgramRow
-                        program={program}
-                        key={program.id}
-                        isActive={program.id === activeProgramId}
-                        setActive={handleSetActive}
-                        deleteProgram={handleDeleteProgram}
-                      />
-                    ))}
+                    <ProgramPageRows
+                      pageIndex={pageIndex}
+                      query={searchQuery}
+                      expectedRows={
+                        rowsOnPage(pageIndex, matchCount, PROGRAMS_PER_PAGE) ||
+                        PROGRAMS_PER_PAGE
+                      }
+                      optimisticActiveId={optimisticActiveId}
+                      setActive={handleSetActive}
+                      deleteProgram={handleDeleteProgram}
+                    />
                   </motion.ul>
                 </AnimatePresence>
               </motion.div>
@@ -620,6 +738,7 @@ export const ProgramsList = (props: ProgramsListProps): ReactElement => {
                   pageCount={pageCount}
                   pageIndex={pageIndex}
                   onPageChange={goToPage}
+                  onPageIntent={prefetchPage}
                 />
               )}
             </>
