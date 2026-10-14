@@ -31,7 +31,6 @@ import { useGetProgramsQuery, usePrefetch } from '@/services/protectedRoutesAPI'
 import { ProgramSummary } from '@/types/programCreation'
 import { toast } from '@/hooks/use-toast'
 import { Button } from '../ui/button'
-import { Spinner } from '../ui/spinner'
 import {
   Dialog,
   DialogClose,
@@ -256,18 +255,45 @@ const SearchBar = ({ query, isPending, onQueryChange }: SearchBarProps) => {
       className="border-b border-neutral-800 px-4 py-3 sm:px-6"
     >
       <div className="relative">
-        {isPending ? (
-          <Spinner
-            aria-hidden
-            role="presentation"
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500"
-          />
-        ) : (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute left-3 top-1/2 grid size-4 -translate-y-1/2 place-items-center"
+        >
           <Search
-            aria-hidden
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500"
+            className={cn(
+              'col-start-1 row-start-1 size-4 text-neutral-500 transition-[opacity,transform] duration-150 ease-out-strong',
+              isPending && 'scale-50 opacity-0'
+            )}
           />
-        )}
+          <span
+            className={cn(
+              'col-start-1 row-start-1 transition-opacity duration-150',
+              isPending ? 'opacity-100 delay-100' : 'opacity-0'
+            )}
+          >
+            <svg
+              viewBox="0 0 16 16"
+              fill="none"
+              className="block size-4 animate-[spin_0.7s_linear_infinite] will-change-transform"
+            >
+              <circle
+                cx="8"
+                cy="8"
+                r="6.25"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                className="text-neutral-700"
+              />
+              <path
+                d="M8 1.75a6.25 6.25 0 0 1 6.25 6.25"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                className="text-app-colors-300"
+              />
+            </svg>
+          </span>
+        </span>
         <input
           ref={inputRef}
           type="search"
