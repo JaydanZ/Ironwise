@@ -1,8 +1,9 @@
-import { useId, useMemo, useState } from 'react'
+import { ReactNode, useId, useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { ChevronDown, Dumbbell, Trophy } from 'lucide-react'
 import { useGetLiftHistoryQuery } from '@/services/protectedRoutesAPI'
 import { Button } from '@/components/ui/button'
+import { InfoTip } from '@/components/ui/info-tip'
 import {
   panelClass,
   panelHeaderClass,
@@ -88,6 +89,61 @@ const LiftRow = ({ exercise, date, set, gain }: LiftRowProps) => {
   )
 }
 
+interface SectionHeadingProps {
+  title: string
+  tipLabel: string
+  tip: ReactNode
+  htmlFor?: string
+}
+
+const SectionHeading = ({
+  title,
+  tipLabel,
+  tip,
+  htmlFor
+}: SectionHeadingProps) => (
+  <div className="flex items-center gap-1.5">
+    <h3 className={sectionTitleClass}>
+      {htmlFor ? <label htmlFor={htmlFor}>{title}</label> : title}
+    </h3>
+    <InfoTip label={tipLabel}>{tip}</InfoTip>
+  </div>
+)
+
+// Uses the lifter's own top set as the worked example
+const OneRepMaxTip = ({ example }: { example: BestSet }) => (
+  <>
+    <strong className="font-semibold text-neutral-50">
+      Estimated 1-rep max
+    </strong>{' '}
+    (est. 1RM) is the heaviest weight you could likely lift for a single rep.
+    It&rsquo;s worked out from a set&rsquo;s weight and reps, so{' '}
+    <span className="tabular-nums text-neutral-50">
+      {formatWeight(example.weight)} {example.unit} &times; {example.reps}
+    </span>{' '}
+    counts as about{' '}
+    <span className="tabular-nums text-neutral-50">
+      {formatWeight(example.e1rm)} {example.unit}
+    </span>
+    . That puts sets with different reps on the same scale.
+  </>
+)
+
+const TREND_TIP = (
+  <>
+    Shows how your est. 1RM for the chosen exercise has changed over the past
+    year. Each point is your best set from one workout, and a break in the line
+    means four or more weeks without that lift. Hover or drag across the chart
+    to see each session.
+  </>
+)
+
+const OneRepMaxColumnLabel = () => (
+  <span aria-hidden className="text-xs font-medium text-neutral-500">
+    Est. 1RM
+  </span>
+)
+
 const ProgressSkeleton = () => (
   <div
     aria-busy="true"
@@ -139,7 +195,7 @@ export const ProgressPanel = () => {
             Progress
           </h2>
           <p className="mt-0.5 text-sm text-neutral-400">
-            Estimated 1-rep max from the past year of logged sets
+            How your lifts have moved over the past year
           </p>
         </div>
       </div>
@@ -175,7 +231,17 @@ export const ProgressPanel = () => {
           <div className="px-4 py-5 sm:px-6">
             {records.length > 0 ? (
               <>
-                <h3 className={sectionTitleClass}>Recent records</h3>
+                <div className="flex items-center justify-between gap-3">
+                  <SectionHeading
+                    title="Recent records"
+                    tipLabel="What is an estimated 1-rep max?"
+                    tip={<OneRepMaxTip example={records[0].set} />}
+                  />
+                  <OneRepMaxColumnLabel />
+                </div>
+                <p className="mt-0.5 text-sm text-neutral-400">
+                  Workouts where you beat your previous best for a lift.
+                </p>
                 <ul className="mt-2">
                   {records.map((record) => (
                     <LiftRow
@@ -190,10 +256,14 @@ export const ProgressPanel = () => {
               </>
             ) : (
               <>
-                <h3 className={sectionTitleClass}>Best lifts</h3>
-                <p className="mt-0.5 text-sm text-neutral-400">
-                  Beat one of these to set your first record.
-                </p>
+                <div className="flex items-center justify-between gap-3">
+                  <SectionHeading
+                    title="Best lifts"
+                    tipLabel="What is an estimated 1-rep max?"
+                    tip={<OneRepMaxTip example={bestLifts[0].set} />}
+                  />
+                  <OneRepMaxColumnLabel />
+                </div>
                 <ul className="mt-2">
                   {bestLifts.map((lift) => (
                     <LiftRow key={lift.exercise} {...lift} />
@@ -205,7 +275,11 @@ export const ProgressPanel = () => {
 
           {!trend && (
             <div className="px-4 py-5 sm:px-6">
-              <h3 className={sectionTitleClass}>Strength trend</h3>
+              <SectionHeading
+                title="Strength trend"
+                tipLabel="About strength trend"
+                tip={TREND_TIP}
+              />
               <p className="mt-1 max-w-[48ch] text-sm leading-relaxed text-neutral-400">
                 Log the same lift in a second workout to see how it&rsquo;s
                 trending.
@@ -216,9 +290,12 @@ export const ProgressPanel = () => {
           {trend && (
             <div className="px-4 py-5 sm:px-6">
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                <h3 className={sectionTitleClass}>
-                  <label htmlFor={selectId}>Strength trend</label>
-                </h3>
+                <SectionHeading
+                  title="Strength trend"
+                  tipLabel="About strength trend"
+                  tip={TREND_TIP}
+                  htmlFor={selectId}
+                />
                 <div className="relative">
                   <select
                     id={selectId}
@@ -248,7 +325,7 @@ export const ProgressPanel = () => {
                   {change > 0 ? '+' : change < 0 ? '−' : '±'}
                   {formatWeight(Math.abs(change))} {trend.unit}
                 </span>{' '}
-                since {shortDate(trend.points[0].date)} &middot;{' '}
+                est. 1RM since {shortDate(trend.points[0].date)} &middot;{' '}
                 {trend.points.length} sessions
               </p>
               <ExerciseTrendChart trend={trend} />

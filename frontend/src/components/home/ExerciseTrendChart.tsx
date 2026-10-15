@@ -124,7 +124,8 @@ export const ExerciseTrendChart = ({ trend }: { trend: ExerciseTrend }) => {
           {active === null ? 'Latest' : shortDate(point.date)}
         </span>
         <span className="font-semibold text-neutral-50">
-          {formatWeight(point.value)} {unit}
+          {formatWeight(point.value)} {unit}{' '}
+          <span className="font-normal text-neutral-400">est. 1RM</span>
         </span>
         <span className="text-neutral-400">
           from {formatWeight(point.set.weight)} {point.set.unit} &times;{' '}
