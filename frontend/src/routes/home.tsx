@@ -2,6 +2,9 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { useGetProfileDataQuery } from '@/services/protectedRoutesAPI'
 import { WorkoutStreakTracker } from '@/components/profile/WorkoutStreakTracker'
+import { NextWorkout } from '@/components/profile/NextWorkout'
+import { WeekStrip } from '@/components/home/WeekStrip'
+import { ProgressPanel } from '@/components/home/ProgressPanel'
 import { Button } from '@/components/ui/button'
 import { panelClass, skeletonClass } from '@/components/profile/profileStyles'
 
@@ -22,6 +25,8 @@ export const Route = createFileRoute('/home')({
 function RouteComponent() {
   const { data, isLoading, isError, isFetching, refetch } =
     useGetProfileDataQuery()
+
+  const activeProgram = data?.active_program?.[0] ?? null
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-32 pt-8 sm:px-8 min-[800px]:pb-16 min-[800px]:pt-28 lg:px-12">
@@ -66,6 +71,15 @@ function RouteComponent() {
         </section>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:gap-6">
+          <WeekStrip
+            structure={activeProgram?.program_structure}
+            history={data?.workout_history}
+            isLoading={isLoading}
+          />
+          <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-2">
+            <NextWorkout program={activeProgram} isLoading={isLoading} />
+            <ProgressPanel />
+          </div>
           <div className="min-w-0">
             <WorkoutStreakTracker
               data={data?.workout_history}

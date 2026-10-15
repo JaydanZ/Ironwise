@@ -15,6 +15,7 @@ import {
 } from '@/types/programCreation'
 import { AuthorizedResponse, ChangePasswordRequest } from '@/types/auth'
 import {
+  LiftSession,
   PreviousPerformance,
   SubmitWorkoutResponse,
   WorkoutHistoryResponse,
@@ -103,6 +104,10 @@ export const protectedApiSlice = createApi({
         providesTags: ['WorkoutHistory']
       }
     ),
+    getLiftHistory: builder.query<LiftSession[], void>({
+      query: () => '/workouts/lift-history',
+      providesTags: ['WorkoutHistory']
+    }),
     submitWorkout: builder.mutation<SubmitWorkoutResponse, WorkoutSubmission>({
       query: (body) => ({ url: '/workouts', method: 'POST', body }),
       invalidatesTags: ['Profile', 'PreviousPerformance', 'WorkoutHistory']
@@ -123,6 +128,7 @@ export const {
   usePrefetch,
   useGetPreviousPerformanceQuery,
   useGetWorkoutHistoryQuery,
+  useGetLiftHistoryQuery,
   useSubmitWorkoutMutation,
   useChangePasswordMutation
 } = protectedApiSlice

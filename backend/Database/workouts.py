@@ -1,6 +1,7 @@
 from datetime import date
 from typing import Dict, Any
 from ..models.workouts import WorkoutSubmission
+from ..utils.lifts import group_lift_sets
 from .supabase import supabase
 import ast
 
@@ -109,6 +110,34 @@ def get_previous_performance(user_id: str, names: list[str], until: date) -> Dic
             entry["sets"].sort(key=lambda s: s["set_number"])
 
         return {"success": True, "data": latest}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+LIFT_PAGE_SIZE = 1000
+LIFT_MAX_PAGES = 20
+
+def get_lift_history(user_id: str, since: date) -> Dict[str, Any]:
+    try:
+        rows: list[Dict[str, Any]] = []
+        for page in range(LIFT_MAX_PAGES):
+            start = page * LIFT_PAGE_SIZE
+            response = (
+                supabase.table("exercise_set_logs")
+                .select("name, reps, weight, weight_unit, completed_workouts!inner(user_id, completed_at)")
+                .eq("completed_workouts.user_id", user_id)
+                .gte("completed_workouts.completed_at", since.isoformat())
+                .gt("weight", 0)
+                .gt("reps", 0)
+                .order("id")
+                .range(start, start + LIFT_PAGE_SIZE - 1)
+                .execute()
+            )
+            batch = ast.literal_eval(str(response.data)) or []
+            rows.extend(batch)
+            if len(batch) < LIFT_PAGE_SIZE:
+                break
+
+        return {"success": True, "data": group_lift_sets(rows)}
     except Exception as e:
         return {"success": False, "error": str(e)}
 

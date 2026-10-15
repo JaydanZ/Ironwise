@@ -13,33 +13,11 @@ import {
   primaryButtonClass,
   skeletonClass
 } from './profileStyles'
+import { getDayIndex } from './schedule'
 
 interface NextWorkoutProps {
   program: WorkoutProgram | null
   isLoading?: boolean
-}
-
-const DAY_NAMES = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday'
-]
-
-const normalize = (value: string): string => value.trim().toLowerCase()
-
-const getDayIndex = (day: string): number | null => {
-  const normalized = normalize(day)
-  for (let i = 0; i < 7; i++) {
-    const name = normalize(DAY_NAMES[i])
-    if (normalized.startsWith(name) || name.startsWith(normalized)) {
-      return i
-    }
-  }
-  return null
 }
 
 // Today's workout if scheduled, otherwise the next upcoming day in the week

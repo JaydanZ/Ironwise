@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query
 from ..models.workouts import WorkoutSubmission
@@ -9,7 +9,8 @@ from ..Database.workouts import (
     has_workout_on,
     get_last_workout_date,
     get_previous_performance,
-    get_recent_workouts
+    get_recent_workouts,
+    get_lift_history
 )
 from ..middleware.authenticateToken import get_current_user
 from ..utils.streak import compute_streak, scheduled_weekdays
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 HISTORY_MAX_LIMIT = 100
 HISTORY_MAX_OFFSET = 10_000
+LIFT_HISTORY_DAYS = 365
 
 workouts_router = APIRouter(
     prefix="/workouts",
@@ -93,4 +95,13 @@ async def workout_history(
     if not result["success"]:
         logger.error("Failed to load workout history: %s", result.get("error"))
         raise HTTPException(status_code=500, detail="Failed to load workout history")
+    return result["data"]
+
+@workouts_router.get("/lift-history", status_code=200)
+async def lift_history(user_id: str = Depends(get_current_user)):
+    since = datetime.now(timezone.utc).date() - timedelta(days=LIFT_HISTORY_DAYS)
+    result = get_lift_history(user_id, since)
+    if not result["success"]:
+        logger.error("Failed to load lift history: %s", result.get("error"))
+        raise HTTPException(status_code=500, detail="Failed to load lift history")
     return result["data"]

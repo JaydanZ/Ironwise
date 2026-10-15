@@ -71,3 +71,14 @@ export interface WorkoutHistoryResponse {
   workouts: WorkoutHistoryEntry[]
   has_more: boolean
 }
+
+export interface LiftSet {
+  reps: number | null
+  weight: number | null
+  weight_unit: WeightUnit
+}
+
+export interface LiftSession {
+  date: string
+  exercises: { name: string; sets: LiftSet[] }[]
+}
