@@ -9,7 +9,7 @@ import {
   within
 } from '@testing-library/react'
 import { userLogout } from '@/features/auth/authSlice'
-import { SessionPanel } from './SessionPanel'
+import { LogoutButton } from './LogoutButton'
 
 const navigate = vi.fn()
 const dispatch = vi.fn()
@@ -35,14 +35,14 @@ const openDialog = async () => {
   return screen.findByRole('dialog')
 }
 
-describe('SessionPanel', () => {
+describe('LogoutButton', () => {
   afterEach(() => {
     cleanup()
     vi.clearAllMocks()
   })
 
   it('asks for confirmation before logging out', async () => {
-    render(<SessionPanel />)
+    render(<LogoutButton />)
     const dialog = await openDialog()
 
     expect(
@@ -53,7 +53,7 @@ describe('SessionPanel', () => {
   })
 
   it('stays logged in when cancelled', async () => {
-    render(<SessionPanel />)
+    render(<LogoutButton />)
     const dialog = await openDialog()
     fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
 
@@ -64,7 +64,7 @@ describe('SessionPanel', () => {
 
   it('logs out and leaves once confirmed', async () => {
     dispatch.mockResolvedValue({ type: 'fulfilled' })
-    render(<SessionPanel />)
+    render(<LogoutButton />)
     const dialog = await openDialog()
     fireEvent.click(within(dialog).getByRole('button', { name: 'Log out' }))
 
@@ -74,7 +74,7 @@ describe('SessionPanel', () => {
 
   it('keeps the dialog open with an error when logout fails', async () => {
     dispatch.mockResolvedValue({ type: 'rejected' })
-    render(<SessionPanel />)
+    render(<LogoutButton />)
     const dialog = await openDialog()
     fireEvent.click(within(dialog).getByRole('button', { name: 'Log out' }))
 

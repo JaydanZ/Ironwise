@@ -148,6 +148,50 @@ html:has(> body[data-scroll-locked]) {
   transition: background-color 140ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+/* Push navigation: the next page slides in over the current one, which drifts
+   left and dims. Only runs for links that opt in with the slide-left type */
+html:active-view-transition-type(slide-left)::view-transition-old(root),
+html:active-view-transition-type(slide-left)::view-transition-new(root) {
+  animation-duration: 340ms;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  animation-fill-mode: both;
+}
+html:active-view-transition-type(slide-left)::view-transition-old(root) {
+  animation-name: page-push-out;
+}
+html:active-view-transition-type(slide-left)::view-transition-new(root) {
+  animation-name: page-push-in;
+}
+
+/* The nav stays put and swaps instantly, so its own indicator can animate */
+::view-transition-group(site-nav),
+::view-transition-old(site-nav),
+::view-transition-new(site-nav) {
+  animation: none;
+}
+::view-transition-old(site-nav) {
+  display: none;
+}
+
+@keyframes page-push-out {
+  to {
+    transform: translateX(-28%);
+    opacity: 0.4;
+  }
+}
+@keyframes page-push-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
 @layer utilities {
   .animate-write-in {
     animation-delay: calc(var(--i, 0) * 28ms);

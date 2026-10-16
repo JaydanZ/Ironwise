@@ -42,7 +42,7 @@ function MobileNav({ routes }: MobileNavProps) {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-[100] border-t border-neutral-800/80 bg-app-colors-500 pb-[max(env(safe-area-inset-bottom),0.5rem)] supports-[backdrop-filter]:bg-app-colors-500/80 supports-[backdrop-filter]:backdrop-blur-xl supports-[backdrop-filter]:backdrop-saturate-150"
+      className="fixed inset-x-0 bottom-0 z-[100] border-t [view-transition-name:site-nav] border-neutral-800/80 bg-app-colors-500 pb-[max(env(safe-area-inset-bottom),0.5rem)] supports-[backdrop-filter]:bg-app-colors-500/80 supports-[backdrop-filter]:backdrop-blur-xl supports-[backdrop-filter]:backdrop-saturate-150"
     >
       <div
         className="relative mx-auto grid max-w-md px-2 pt-1"
@@ -118,7 +118,7 @@ function RootComponent() {
       {isMobile ? (
         <MobileNav routes={navRoutes} />
       ) : (
-        <nav className="flex flex-nowrap fixed top-0 z-50 w-full items-center justify-between bg-app-colors-500 py-6">
+        <nav className="flex flex-nowrap fixed top-0 z-50 w-full [view-transition-name:site-nav] items-center justify-between bg-app-colors-500 py-6">
           {/* DESKTOP VIEW */}
           {/* Left elements */}
           <ul className="flex flex-row list-style-none me-auto pl-12">
