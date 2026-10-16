@@ -192,11 +192,8 @@ export const ProgressPanel = () => {
       <div className={panelHeaderClass}>
         <div>
           <h2 id="progress-title" className={panelTitleClass}>
-            Progress
+            Your Progress
           </h2>
-          <p className="mt-0.5 text-sm text-neutral-400">
-            How your lifts have moved over the past year
-          </p>
         </div>
       </div>
 
