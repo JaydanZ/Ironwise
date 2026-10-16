@@ -79,7 +79,7 @@ export const ExerciseItem = memo(
               'flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold tabular-nums transition-colors duration-150',
               complete
                 ? 'border-app-colors-300 bg-app-colors-300 text-app-colors-500'
-                : 'border-neutral-700 text-neutral-400'
+                : 'border-neutral-700 text-neutral-400 group-data-[state=open]:border-app-colors-300 group-data-[state=open]:text-app-colors-300'
             )}
           >
             {complete ? (
