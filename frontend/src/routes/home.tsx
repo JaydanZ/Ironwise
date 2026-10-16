@@ -72,6 +72,7 @@ function RouteComponent() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:gap-6">
           <WeekStrip
+            programId={activeProgram?.id}
             structure={activeProgram?.program_structure}
             history={data?.workout_history}
             isLoading={isLoading}

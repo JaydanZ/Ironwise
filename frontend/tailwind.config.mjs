@@ -144,6 +144,42 @@ export default {
   					transform: 'translateY(0) scaleY(1)'
   				}
   			},
+  			'dialog-in': {
+  				from: {
+  					opacity: '0',
+  					transform: 'translateY(8px) scale(0.97)'
+  				},
+  				to: {
+  					opacity: '1',
+  					transform: 'translateY(0) scale(1)'
+  				}
+  			},
+  			'dialog-out': {
+  				from: {
+  					opacity: '1',
+  					transform: 'translateY(0) scale(1)'
+  				},
+  				to: {
+  					opacity: '0',
+  					transform: 'translateY(4px) scale(0.98)'
+  				}
+  			},
+  			'overlay-in': {
+  				from: {
+  					opacity: '0'
+  				},
+  				to: {
+  					opacity: '1'
+  				}
+  			},
+  			'overlay-out': {
+  				from: {
+  					opacity: '1'
+  				},
+  				to: {
+  					opacity: '0'
+  				}
+  			},
   			'dropdown-out': {
   				from: {
   					opacity: '1',
@@ -163,7 +199,11 @@ export default {
   			'ring-out': 'ring-out 700ms cubic-bezier(0.23, 1, 0.32, 1) 200ms both',
   			'tick-in': 'tick-in 320ms cubic-bezier(0.23, 1, 0.32, 1) backwards',
   			'dropdown-in': 'dropdown-in 200ms cubic-bezier(0.23, 1, 0.32, 1)',
-  			'dropdown-out': 'dropdown-out 150ms cubic-bezier(0.23, 1, 0.32, 1) forwards'
+  			'dropdown-out': 'dropdown-out 150ms cubic-bezier(0.23, 1, 0.32, 1) forwards',
+  			'dialog-in': 'dialog-in 160ms cubic-bezier(0.23, 1, 0.32, 1)',
+  			'dialog-out': 'dialog-out 100ms cubic-bezier(0.4, 0, 1, 1) forwards',
+  			'overlay-in': 'overlay-in 140ms cubic-bezier(0.23, 1, 0.32, 1)',
+  			'overlay-out': 'overlay-out 100ms cubic-bezier(0.4, 0, 1, 1) forwards'
   		}
   	}
   },

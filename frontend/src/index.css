@@ -135,6 +135,19 @@
   }
 }
 
+/* The stable gutter already holds the scrollbar's space, so the margin Radix
+   adds when a dialog locks scrolling would shift the page sideways */
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+}
+
+/* Overlays stop at the gutter, so dim it to match: #0f0f0f under black/70.
+   Fades in with the overlay and snaps back once the overlay has faded out */
+html:has(> body[data-scroll-locked]) {
+  background-color: #050505;
+  transition: background-color 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
 @layer utilities {
   .animate-write-in {
     animation-delay: calc(var(--i, 0) * 28ms);

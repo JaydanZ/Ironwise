@@ -10,8 +10,10 @@ import {
   skeletonClass
 } from '../profile/profileStyles'
 import { buildWeek, WeekDay, WeekDayStatus } from './weekPlan'
+import { WorkoutDayDialog } from './WorkoutDayDialog'
 
 interface WeekStripProps {
+  programId?: string
   structure?: Workout[] | null
   history?: WorkoutTracker[] | null
   isLoading?: boolean
@@ -52,18 +54,16 @@ const StatusMark = ({ status }: { status: WeekDayStatus }) => {
   )
 }
 
-const DayTile = ({ day }: { day: WeekDay }) => {
+const DayTile = ({ day, programId }: { day: WeekDay; programId?: string }) => {
   const focus = day.workout?.focus
-  return (
-    <li
-      aria-current={day.isToday ? 'date' : undefined}
-      className={clsx(
-        'flex min-w-0 flex-col items-center gap-2 rounded-md border px-1 py-3',
-        day.isToday
-          ? 'border-app-colors-300/40 bg-app-colors-300/[0.06]'
-          : 'border-transparent'
-      )}
-    >
+  const tileClass = clsx(
+    'flex w-full min-w-0 flex-col items-center gap-2 rounded-md border px-1 py-3',
+    day.isToday
+      ? 'border-app-colors-300/40 bg-app-colors-300/[0.06]'
+      : 'border-transparent'
+  )
+  const content = (
+    <>
       <span className="sr-only">
         {day.shortName} {day.dayOfMonth}
         {focus ? `, ${focus}` : ''}: {STATUS_LABEL[day.status]}
@@ -94,6 +94,31 @@ const DayTile = ({ day }: { day: WeekDay }) => {
       >
         {focus ?? 'Rest'}
       </span>
+    </>
+  )
+
+  return (
+    <li
+      aria-current={day.isToday ? 'date' : undefined}
+      className="flex min-w-0"
+    >
+      {day.workout ? (
+        <WorkoutDayDialog day={day} programId={programId}>
+          <button
+            type="button"
+            className={clsx(
+              tileClass,
+              'cursor-pointer select-none outline-none transition-[transform,background-color] duration-150 ease-out-strong [-webkit-tap-highlight-color:transparent] [touch-action:manipulation] [@media(hover:hover)]:hover:bg-neutral-800/60 focus-visible:ring-1 focus-visible:ring-app-colors-300 active:scale-[0.96] data-[state=open]:bg-neutral-800/60 motion-reduce:active:scale-100',
+              day.isToday &&
+                '[@media(hover:hover)]:hover:bg-app-colors-300/[0.1]'
+            )}
+          >
+            {content}
+          </button>
+        </WorkoutDayDialog>
+      ) : (
+        <div className={tileClass}>{content}</div>
+      )}
     </li>
   )
 }
@@ -118,6 +143,7 @@ const WeekStripSkeleton = () => (
 )
 
 export const WeekStrip = ({
+  programId,
   structure,
   history,
   isLoading
@@ -148,7 +174,7 @@ export const WeekStrip = ({
       </div>
       <ol className="grid grid-cols-7 gap-1 px-2 py-3 sm:gap-2 sm:px-4">
         {week.days.map((day) => (
-          <DayTile key={day.date} day={day} />
+          <DayTile key={day.date} day={day} programId={programId} />
         ))}
       </ol>
     </section>
