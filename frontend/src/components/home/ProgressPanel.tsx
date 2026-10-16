@@ -1,15 +1,27 @@
 import { ReactNode, useId, useMemo, useState } from 'react'
 import clsx from 'clsx'
-import { ChevronDown, Dumbbell, Trophy } from 'lucide-react'
+import { Dumbbell, Trophy } from 'lucide-react'
 import { useGetLiftHistoryQuery } from '@/services/protectedRoutesAPI'
 import { Button } from '@/components/ui/button'
 import { InfoTip } from '@/components/ui/info-tip'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 import {
   panelClass,
   panelHeaderClass,
   panelTitleClass,
   skeletonClass
 } from '../profile/profileStyles'
+import {
+  menuCollisionPadding,
+  menuContentClass
+} from '../programCreation/menuStyles'
 import { parseLogDate } from '../training/workoutHistory'
 import { ExerciseTrendChart } from './ExerciseTrendChart'
 import {
@@ -113,28 +125,30 @@ const SectionHeading = ({
 // Uses the lifter's own top set as the worked example
 const OneRepMaxTip = ({ example }: { example: BestSet }) => (
   <>
-    <strong className="font-semibold text-neutral-50">
-      Estimated 1-rep max
-    </strong>{' '}
-    (est. 1RM) is the heaviest weight you could likely lift for a single rep.
-    It&rsquo;s worked out from a set&rsquo;s weight and reps, so{' '}
-    <span className="tabular-nums text-neutral-50">
-      {formatWeight(example.weight)} {example.unit} &times; {example.reps}
-    </span>{' '}
-    counts as about{' '}
-    <span className="tabular-nums text-neutral-50">
-      {formatWeight(example.e1rm)} {example.unit}
-    </span>
-    . That puts sets with different reps on the same scale.
+    <p>
+      <strong className="font-semibold text-neutral-50">Est. 1RM</strong>: the
+      most you could likely lift for one rep.
+    </p>
+    <p className="mt-1.5 tabular-nums text-neutral-400">
+      e.g. {formatWeight(example.weight)} {example.unit} &times; {example.reps}{' '}
+      &asymp;{' '}
+      <span className="text-neutral-50">
+        {formatWeight(example.e1rm)} {example.unit}
+      </span>
+    </p>
   </>
 )
 
 const TREND_TIP = (
   <>
-    Shows how your est. 1RM for the chosen exercise has changed over the past
-    year. Each point is your best set from one workout, and a break in the line
-    means four or more weeks without that lift. Hover or drag across the chart
-    to see each session.
+    <p className="font-semibold text-neutral-50">
+      Your est. 1RM over the past year
+    </p>
+    <ul className="mt-1.5 space-y-0.5 text-neutral-400">
+      <li>Point: best set of a workout</li>
+      <li>Gap: 4+ weeks without the lift</li>
+      <li>Drag across to see each session</li>
+    </ul>
   </>
 )
 
@@ -293,24 +307,33 @@ export const ProgressPanel = () => {
                   tip={TREND_TIP}
                   htmlFor={selectId}
                 />
-                <div className="relative">
-                  <select
+                <Select value={exercise ?? ''} onValueChange={setSelected}>
+                  <SelectTrigger
                     id={selectId}
-                    value={exercise ?? ''}
-                    onChange={(event) => setSelected(event.target.value)}
-                    className="h-10 max-w-56 appearance-none truncate rounded-md border border-neutral-700 bg-neutral-900 py-0 pl-3 pr-9 text-sm text-neutral-100 outline-none transition-colors duration-150 hover:border-neutral-600 focus-visible:border-app-colors-300 focus-visible:ring-1 focus-visible:ring-app-colors-300"
+                    className="group h-10 w-auto max-w-56 touch-manipulation gap-2 border-neutral-700 bg-neutral-900 pl-3 pr-2.5 text-neutral-100 shadow-none transition-[border-color,transform] duration-150 ease-out-strong hover:border-neutral-600 focus:ring-app-colors-300 active:scale-[0.97] data-[state=open]:border-neutral-600 [&>svg]:opacity-100 [&>svg]:text-neutral-400 [&>svg]:transition-transform [&>svg]:duration-200 [&>svg]:ease-out-strong data-[state=open]:[&>svg]:rotate-180 motion-reduce:[&>svg]:transition-none"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent
+                    align="end"
+                    sideOffset={6}
+                    collisionPadding={menuCollisionPadding}
+                    className={cn(
+                      menuContentClass,
+                      'max-h-[min(20rem,var(--radix-select-content-available-height))] max-w-[calc(100vw-2rem)] origin-[--radix-select-content-transform-origin] data-[side=bottom]:translate-y-0 data-[side=top]:translate-y-0 data-[side=top]:[--dropdown-shift:6px]'
+                    )}
                   >
                     {exercises.map((name) => (
-                      <option key={name} value={name}>
+                      <SelectItem
+                        key={name}
+                        value={name}
+                        className="min-h-11 cursor-pointer rounded-md py-2.5 pl-3 pr-9 text-neutral-100 focus:bg-neutral-800/70 focus:text-neutral-50 data-[state=checked]:text-app-colors-300 [&_svg]:text-app-colors-300"
+                      >
                         {name}
-                      </option>
+                      </SelectItem>
                     ))}
-                  </select>
-                  <ChevronDown
-                    aria-hidden
-                    className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400"
-                  />
-                </div>
+                  </SelectContent>
+                </Select>
               </div>
               <p className="mb-4 mt-1 text-sm text-neutral-400">
                 <span
