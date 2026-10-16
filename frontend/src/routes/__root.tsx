@@ -5,6 +5,7 @@ import {
   useRouterState
 } from '@tanstack/react-router'
 
+import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 
@@ -13,6 +14,7 @@ import { LOGGED_IN_ROUTES, LOGGED_OUT_ROUTES } from '@/data/routesData'
 import clsx from 'clsx'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
+import { pageTransitions, tabIndex } from '@/lib/pageTransitions'
 
 interface MobileNavRoute {
   id: string
@@ -32,9 +34,9 @@ export const Route = createRootRoute({
 function MobileNav({ routes }: MobileNavProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
-  const activeIndex = routes.findIndex((route) =>
-    route.href === '/' ? pathname === '/' : pathname.startsWith(route.href)
-  )
+  const hrefs = useMemo(() => routes.map((route) => route.href), [routes])
+  const activeIndex = tabIndex(hrefs, pathname)
+  const tabTransition = useMemo(() => pageTransitions.tabs(hrefs), [hrefs])
 
   const itemClass =
     'group relative flex h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-xl outline-none select-none [-webkit-tap-highlight-color:transparent] transition-[color,transform] duration-150 ease-out active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-app-colors-300/60 motion-reduce:active:scale-100 [&_svg]:size-[22px] [&_svg]:shrink-0'
@@ -96,6 +98,7 @@ function MobileNav({ routes }: MobileNavProps) {
               key={route.id}
               to={route.href}
               params={route.params}
+              viewTransition={tabTransition}
               aria-current={isActive ? 'page' : undefined}
               className={itemClass}
             >
@@ -112,6 +115,10 @@ function RootComponent() {
   const authStatus = useSelector((state: RootState) => state.auth.userToken)
   const isMobile = useIsMobile()
   const navRoutes = authStatus ? LOGGED_IN_ROUTES : LOGGED_OUT_ROUTES
+  const tabTransition = useMemo(
+    () => pageTransitions.tabs(navRoutes.map((route) => route.href)),
+    [navRoutes]
+  )
 
   return (
     <div className="relative min-h-dvh h-max bg-app-colors-500 z-50">
@@ -129,7 +136,12 @@ function RootComponent() {
           {/* Right elements */}
           <div className="flex flex-row items-center pr-12 gap-12">
             {navRoutes.map((route) => (
-              <Link to={route.href} key={route.id} params={route.params}>
+              <Link
+                to={route.href}
+                key={route.id}
+                params={route.params}
+                viewTransition={tabTransition}
+              >
                 <Button variant="ghost" size="lg" className="p-0">
                   {route.icon}
                   {route.id}

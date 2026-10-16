@@ -3,7 +3,10 @@ import { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import { Dumbbell } from 'lucide-react'
+import { pageTransitions } from '@/lib/pageTransitions'
 import { SettingsGroup, SettingsRow } from './SettingsGroup'
+
+const linkTransitions: unknown[] = []
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
@@ -16,15 +19,14 @@ vi.mock('@tanstack/react-router', () => ({
     viewTransition?: unknown
     children: ReactNode
     className?: string
-  }) => (
-    <a
-      href={to}
-      className={className}
-      data-view-transition={JSON.stringify(viewTransition ?? null)}
-    >
-      {children}
-    </a>
-  )
+  }) => {
+    linkTransitions.push(viewTransition)
+    return (
+      <a href={to} className={className}>
+        {children}
+      </a>
+    )
+  }
 }))
 
 const renderRow = (props: Partial<Parameters<typeof SettingsRow>[0]>) =>
@@ -35,21 +37,22 @@ const renderRow = (props: Partial<Parameters<typeof SettingsRow>[0]>) =>
   )
 
 describe('SettingsRow', () => {
-  afterEach(cleanup)
+  afterEach(() => {
+    cleanup()
+    linkTransitions.length = 0
+  })
 
   it('slides the next page in when asked to', () => {
     renderRow({ to: '/training', value: 'Upper / Lower', slide: true })
     const link = screen.getByRole('link', { name: /Active program/ })
     expect(link.getAttribute('href')).toBe('/training')
-    expect(JSON.parse(link.dataset.viewTransition!)).toEqual({
-      types: ['slide-left']
-    })
+    expect(linkTransitions.at(-1)).toBe(pageTransitions.slideLeft)
   })
 
   it('navigates without a transition by default', () => {
     renderRow({ to: '/changePassword' })
-    const link = screen.getByRole('link', { name: /Active program/ })
-    expect(JSON.parse(link.dataset.viewTransition!)).toBeNull()
+    expect(screen.getByRole('link', { name: /Active program/ })).toBeTruthy()
+    expect(linkTransitions.at(-1)).toBeUndefined()
   })
 
   it('renders a plain row without a destination', () => {
