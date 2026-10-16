@@ -177,7 +177,10 @@ export const WorkoutSession = ({
         </div>
       </header>
 
-      <section aria-labelledby="exercises-title" className={panelClass}>
+      <section
+        aria-labelledby="exercises-title"
+        className={clsx(panelClass, 'mb-24 min-[800px]:mb-0')}
+      >
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-neutral-800 px-4 py-4 sm:px-6">
           <h2
             id="exercises-title"

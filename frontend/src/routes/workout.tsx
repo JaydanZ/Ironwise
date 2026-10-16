@@ -114,7 +114,7 @@ function RouteComponent() {
   )
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-56 pt-8 sm:px-8 min-[800px]:pb-16 min-[800px]:pt-28">
+    <main className="mx-auto w-full max-w-3xl px-4 pb-32 pt-8 sm:px-8 min-[800px]:pb-16 min-[800px]:pt-28">
       {isLoading || otherProgram.isLoading ? (
         <SessionSkeleton />
       ) : isError ? (
