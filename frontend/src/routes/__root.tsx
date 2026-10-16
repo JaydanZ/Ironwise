@@ -82,7 +82,7 @@ function MobileNav({ routes }: MobileNavProps) {
               </span>
               <span
                 className={clsx(
-                  'max-w-full truncate px-0.5 text-[11px] font-medium leading-none tracking-[0.01em] transition-colors duration-150',
+                  'max-w-full truncate px-0.5 text-[11px] font-medium leading-[1.3] tracking-[0.01em] transition-colors duration-150',
                   isActive
                     ? 'text-neutral-50'
                     : 'text-neutral-500 [@media(hover:hover)_and_(pointer:fine)]:group-hover:text-neutral-300'
