@@ -152,6 +152,16 @@ const inputClass = (hasError: boolean) =>
     hasError && 'border-red-500 focus-visible:ring-0'
   )
 
+const exerciseColumnsClass =
+  'sm:grid-cols-[minmax(0,1fr)_5.5rem_5.5rem_2.5rem]'
+
+// On desktop the column header names the fields, so the label is screen-reader only
+// and the edited mark sits inside the input instead of above it
+const exerciseLabelRowClass =
+  'flex items-center gap-1.5 sm:pointer-events-none sm:absolute sm:right-3 sm:top-0 sm:h-10'
+
+const exerciseLabelClass = 'text-neutral-400 sm:sr-only'
+
 const enterClass =
   'duration-200 ease-out-strong animate-in fade-in motion-reduce:animate-none'
 
@@ -693,9 +703,26 @@ export function ManualProgramCreation({
                               >
                                 {(exercisesField) => (
                                   <div className="border-t border-neutral-800 px-4 py-4 sm:px-6">
-                                    <h3 className="text-sm font-semibold text-neutral-300">
-                                      Exercises
-                                    </h3>
+                                    <div
+                                      className={clsx(
+                                        'text-sm font-semibold text-neutral-300 sm:grid sm:gap-x-2',
+                                        exerciseColumnsClass
+                                      )}
+                                    >
+                                      <h3>Exercises</h3>
+                                      <span
+                                        aria-hidden
+                                        className="hidden sm:block"
+                                      >
+                                        Sets
+                                      </span>
+                                      <span
+                                        aria-hidden
+                                        className="hidden sm:block"
+                                      >
+                                        Reps
+                                      </span>
+                                    </div>
                                     <ul className="mt-3 flex flex-col gap-4">
                                       {exercisesField.state.value.map(
                                         (exercise, exerciseIndex) => {
@@ -708,7 +735,8 @@ export function ManualProgramCreation({
                                               key={exercise.id}
                                               className={clsx(
                                                 enterClass,
-                                                'grid grid-cols-[1fr_1fr_auto] items-start gap-x-2 gap-y-3 rounded-md border border-neutral-800 p-3 sm:grid-cols-[minmax(0,1fr)_5.5rem_5.5rem_auto] sm:border-0 sm:p-0'
+                                                'grid grid-cols-[1fr_1fr_auto] items-start gap-x-2 gap-y-3 rounded-md border border-neutral-800 p-3 sm:border-0 sm:p-0',
+                                                exerciseColumnsClass
                                               )}
                                             >
                                               <form.Field
@@ -723,11 +751,17 @@ export function ManualProgramCreation({
                                                 }}
                                               >
                                                 {(field) => (
-                                                  <div className="col-span-2 row-start-1 grid gap-2 sm:col-span-1">
-                                                    <div className="flex items-center gap-1.5">
+                                                  <div className="relative col-span-2 row-start-1 grid gap-2 sm:col-span-1">
+                                                    <div
+                                                      className={
+                                                        exerciseLabelRowClass
+                                                      }
+                                                    >
                                                       <Label
                                                         htmlFor={`${exercise.id}-name`}
-                                                        className="text-neutral-400"
+                                                        className={
+                                                          exerciseLabelClass
+                                                        }
                                                       >
                                                         Exercise Name
                                                       </Label>
@@ -764,9 +798,12 @@ export function ManualProgramCreation({
                                                         field.state.meta.errors
                                                           .length > 0
                                                       }
-                                                      className={inputClass(
-                                                        field.state.meta.errors
-                                                          .length > 0
+                                                      className={clsx(
+                                                        inputClass(
+                                                          field.state.meta
+                                                            .errors.length > 0
+                                                        ),
+                                                        'sm:pr-8'
                                                       )}
                                                     />
                                                     <FieldError
@@ -786,11 +823,17 @@ export function ManualProgramCreation({
                                                 }}
                                               >
                                                 {(field) => (
-                                                  <div className="col-start-1 row-start-2 grid gap-2 sm:col-start-2 sm:row-start-1">
-                                                    <div className="flex items-center gap-1.5">
+                                                  <div className="relative col-start-1 row-start-2 grid gap-2 sm:col-start-2 sm:row-start-1">
+                                                    <div
+                                                      className={
+                                                        exerciseLabelRowClass
+                                                      }
+                                                    >
                                                       <Label
                                                         htmlFor={`${exercise.id}-sets`}
-                                                        className="text-neutral-400"
+                                                        className={
+                                                          exerciseLabelClass
+                                                        }
                                                       >
                                                         Sets
                                                       </Label>
@@ -820,9 +863,12 @@ export function ManualProgramCreation({
                                                         field.state.meta.errors
                                                           .length > 0
                                                       }
-                                                      className={inputClass(
-                                                        field.state.meta.errors
-                                                          .length > 0
+                                                      className={clsx(
+                                                        inputClass(
+                                                          field.state.meta
+                                                            .errors.length > 0
+                                                        ),
+                                                        'sm:pr-8'
                                                       )}
                                                     />
                                                     <FieldError
@@ -842,11 +888,17 @@ export function ManualProgramCreation({
                                                 }}
                                               >
                                                 {(field) => (
-                                                  <div className="col-start-2 row-start-2 grid gap-2 sm:col-start-3 sm:row-start-1">
-                                                    <div className="flex items-center gap-1.5">
+                                                  <div className="relative col-start-2 row-start-2 grid gap-2 sm:col-start-3 sm:row-start-1">
+                                                    <div
+                                                      className={
+                                                        exerciseLabelRowClass
+                                                      }
+                                                    >
                                                       <Label
                                                         htmlFor={`${exercise.id}-reps`}
-                                                        className="text-neutral-400"
+                                                        className={
+                                                          exerciseLabelClass
+                                                        }
                                                       >
                                                         Reps
                                                       </Label>
@@ -876,9 +928,12 @@ export function ManualProgramCreation({
                                                         field.state.meta.errors
                                                           .length > 0
                                                       }
-                                                      className={inputClass(
-                                                        field.state.meta.errors
-                                                          .length > 0
+                                                      className={clsx(
+                                                        inputClass(
+                                                          field.state.meta
+                                                            .errors.length > 0
+                                                        ),
+                                                        'sm:pr-8'
                                                       )}
                                                     />
                                                     <FieldError
@@ -894,7 +949,7 @@ export function ManualProgramCreation({
                                                 type="button"
                                                 className={clsx(
                                                   iconButtonClass,
-                                                  'col-start-3 row-start-1 mt-[1.625rem] sm:col-start-4'
+                                                  'col-start-3 row-start-1 mt-[1.625rem] sm:col-start-4 sm:mt-0'
                                                 )}
                                                 aria-label={`Remove exercise ${
                                                   exerciseIndex + 1
