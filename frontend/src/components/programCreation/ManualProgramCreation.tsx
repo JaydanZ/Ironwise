@@ -212,7 +212,7 @@ export function ManualProgramCreation({
   const cardRefs = useRef(new Map<string, HTMLDivElement>())
   // Day whose weekday change moved it; the viewport follows it once it lands
   const followDayId = useRef<string | null>(null)
-  const { sentinelRef, isStuck } = useStuckHeader(isEditing && isMobile)
+  const { sentinelRef, isStuck } = useStuckHeader(isMobile)
 
   const scrollToDay = (dayId: string) => {
     const card = cardRefs.current.get(dayId)
@@ -349,60 +349,44 @@ export function ManualProgramCreation({
   const editedDescription = (id: string, field: EditableField) =>
     fieldEdited(id, field) ? editedMarkId(id, field) : undefined
 
-  const backLink = (
-    <Link
-      to="/training"
-      className="-ml-2 inline-flex h-9 items-center gap-1.5 rounded-md px-2 text-sm text-neutral-400 outline-none transition-colors duration-150 hover:text-app-colors-300 focus-visible:ring-1 focus-visible:ring-app-colors-300"
-    >
-      <ArrowLeft aria-hidden className="size-4" />
-      Training
-    </Link>
-  )
-
   return (
     <MotionConfig reducedMotion="user">
       <section className="w-full max-w-3xl">
-        {isEditing ? (
-          <>
-            <div ref={sentinelRef} aria-hidden />
-            <header className="pointer-events-none sticky top-0 z-30 pb-3 pt-[max(env(safe-area-inset-top),1rem)] min-[800px]:static min-[800px]:pt-4 [&_a]:pointer-events-auto">
-              <div
-                aria-hidden
-                className={clsx(
-                  'pointer-events-none absolute -inset-x-4 top-0 -z-10 h-[calc(max(env(safe-area-inset-top),1rem)+5rem)] border-b border-neutral-800/80 bg-app-colors-500/95 transition-opacity duration-200 ease-out-strong supports-[backdrop-filter]:bg-app-colors-500/80 supports-[backdrop-filter]:backdrop-blur-xl sm:-inset-x-8 min-[800px]:hidden',
-                  isStuck ? 'opacity-100' : 'opacity-0'
-                )}
-              />
-              {backLink}
-              <h1
-                className={clsx(
-                  'mt-3 origin-top-left font-display text-3xl font-bold leading-tight text-neutral-50 transition-transform duration-200 ease-out-strong motion-reduce:transition-none sm:text-4xl',
-                  isStuck && '-translate-y-2 scale-[0.65]'
-                )}
-              >
-                Edit program
-              </h1>
-            </header>
-            <p
-              className={clsx(
-                '-mt-2 mb-8 text-sm text-neutral-400 transition-[opacity,transform] duration-200 ease-out-strong motion-reduce:transform-none',
-                isStuck && '-translate-y-1 opacity-0'
-              )}
-            >
-              Change your training days and the exercises for each one.
-            </p>
-          </>
-        ) : (
-          <header className="pb-8">
-            {backLink}
-            <h1 className="mt-3 font-display text-3xl font-bold leading-tight text-neutral-50 sm:text-4xl">
-              Build a program
-            </h1>
-            <p className="mt-1 text-sm text-neutral-400">
-              Set your training days, then add the exercises for each one.
-            </p>
-          </header>
-        )}
+        <div ref={sentinelRef} aria-hidden />
+        <header className="pointer-events-none sticky top-0 z-30 pb-3 pt-[max(env(safe-area-inset-top),1rem)] min-[800px]:static min-[800px]:pt-4 [&_a]:pointer-events-auto">
+          <div
+            aria-hidden
+            className={clsx(
+              'pointer-events-none absolute -inset-x-4 top-0 -z-10 h-[calc(max(env(safe-area-inset-top),1rem)+5rem)] border-b border-neutral-800/80 bg-app-colors-500/95 transition-opacity duration-200 ease-out-strong supports-[backdrop-filter]:bg-app-colors-500/80 supports-[backdrop-filter]:backdrop-blur-xl sm:-inset-x-8 min-[800px]:hidden',
+              isStuck ? 'opacity-100' : 'opacity-0'
+            )}
+          />
+          <Link
+            to="/training"
+            className="-ml-2 inline-flex h-9 items-center gap-1.5 rounded-md px-2 text-sm text-neutral-400 outline-none transition-colors duration-150 hover:text-app-colors-300 focus-visible:ring-1 focus-visible:ring-app-colors-300"
+          >
+            <ArrowLeft aria-hidden className="size-4" />
+            Training
+          </Link>
+          <h1
+            className={clsx(
+              'mt-3 origin-top-left font-display text-3xl font-bold leading-tight text-neutral-50 transition-transform duration-200 ease-out-strong motion-reduce:transition-none sm:text-4xl',
+              isStuck && '-translate-y-2 scale-[0.65]'
+            )}
+          >
+            {isEditing ? 'Edit program' : 'Build a program'}
+          </h1>
+        </header>
+        <p
+          className={clsx(
+            '-mt-2 mb-8 text-sm text-neutral-400 transition-[opacity,transform] duration-200 ease-out-strong motion-reduce:transform-none',
+            isStuck && '-translate-y-1 opacity-0'
+          )}
+        >
+          {isEditing
+            ? 'Change your training days and the exercises for each one.'
+            : 'Set your training days, then add the exercises for each one.'}
+        </p>
 
         <form
           noValidate
@@ -964,7 +948,10 @@ export function ManualProgramCreation({
                 <Button
                   type="button"
                   variant="outline"
-                  className={clsx(secondaryButtonClass, 'self-start')}
+                  className={clsx(
+                    secondaryButtonClass,
+                    'w-full min-[800px]:w-auto min-[800px]:self-start'
+                  )}
                   disabled={daysField.state.value.length >= WEEKDAYS.length}
                   onClick={() => daysField.pushValue(newDay(usedDays))}
                 >
@@ -977,40 +964,21 @@ export function ManualProgramCreation({
             )}
           </form.Field>
 
-          <div
-            className={clsx(
-              isEditing
-                ? 'fixed inset-x-0 bottom-[calc(61px+max(env(safe-area-inset-bottom),0.5rem))] z-40 flex flex-col gap-2 border-t border-neutral-800/80 bg-app-colors-500/95 px-4 py-3 supports-[backdrop-filter]:bg-app-colors-500/80 supports-[backdrop-filter]:backdrop-blur-xl min-[800px]:static min-[800px]:mt-4 min-[800px]:flex-row min-[800px]:items-center min-[800px]:justify-between min-[800px]:gap-4 min-[800px]:rounded-lg min-[800px]:border min-[800px]:border-neutral-800 min-[800px]:bg-[#141414] min-[800px]:px-6 min-[800px]:py-5 min-[800px]:backdrop-blur-none'
-                : clsx(
-                    panelClass,
-                    'mt-4 flex flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6'
-                  )
-            )}
-          >
+          <div className="fixed inset-x-0 bottom-[calc(61px+max(env(safe-area-inset-bottom),0.5rem))] z-40 flex flex-col gap-2 border-t border-neutral-800/80 bg-app-colors-500/95 px-4 py-3 sm:px-8 supports-[backdrop-filter]:bg-app-colors-500/80 supports-[backdrop-filter]:backdrop-blur-xl min-[800px]:static min-[800px]:mt-4 min-[800px]:flex-row min-[800px]:items-center min-[800px]:justify-between min-[800px]:gap-4 min-[800px]:rounded-lg min-[800px]:border min-[800px]:border-neutral-800 min-[800px]:bg-[#141414] min-[800px]:px-6 min-[800px]:py-5 min-[800px]:backdrop-blur-none">
             <div
               className={clsx(
                 'min-w-0',
-                isEditing &&
-                  saveStatus !== 'error' &&
-                  'hidden min-[800px]:block'
+                saveStatus !== 'error' && 'hidden min-[800px]:block'
               )}
               aria-live="polite"
             >
-              <p
-                className={clsx(
-                  'text-base font-semibold text-neutral-50',
-                  isEditing && 'hidden min-[800px]:block'
-                )}
-              >
+              <p className="hidden text-base font-semibold text-neutral-50 min-[800px]:block">
                 {isEditing ? 'Save your changes' : 'Save this program'}
               </p>
               {saveStatus === 'error' ? (
                 <p
                   role="alert"
-                  className={clsx(
-                    'text-sm text-red-400',
-                    isEditing ? 'min-[800px]:mt-1' : 'mt-1'
-                  )}
+                  className="text-sm text-red-400 min-[800px]:mt-1"
                 >
                   We couldn&rsquo;t save it. Check your connection and try
                   again.
@@ -1027,10 +995,7 @@ export function ManualProgramCreation({
               type="submit"
               className={clsx(
                 primaryButtonClass,
-                'h-11 w-full disabled:opacity-100',
-                isEditing
-                  ? 'min-[800px]:h-10 min-[800px]:w-auto min-[800px]:min-w-[9.5rem]'
-                  : 'sm:h-10 sm:w-auto sm:min-w-[9.5rem]'
+                'h-11 w-full disabled:opacity-100 min-[800px]:h-10 min-[800px]:w-auto min-[800px]:min-w-[9.5rem]'
               )}
               disabled={saveStatus === 'saving'}
             >
