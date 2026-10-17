@@ -18,6 +18,7 @@ import {
   LiftSession,
   PreviousPerformance,
   SubmitWorkoutResponse,
+  WorkoutHistoryArgs,
   WorkoutHistoryResponse,
   WorkoutSubmission
 } from '@/types/workoutSession'
@@ -97,13 +98,19 @@ export const protectedApiSlice = createApi({
       },
       providesTags: ['PreviousPerformance']
     }),
-    getWorkoutHistory: builder.query<WorkoutHistoryResponse, { limit: number }>(
-      {
-        query: ({ limit }) =>
-          `/workouts?${new URLSearchParams({ limit: String(limit) })}`,
-        providesTags: ['WorkoutHistory']
-      }
-    ),
+    getWorkoutHistory: builder.query<
+      WorkoutHistoryResponse,
+      WorkoutHistoryArgs
+    >({
+      query: ({ page, limit, q }) =>
+        `/workouts?${new URLSearchParams({
+          limit: String(limit),
+          offset: String(page * limit),
+          q
+        })}`,
+      keepUnusedDataFor: 120,
+      providesTags: ['WorkoutHistory']
+    }),
     getLiftHistory: builder.query<LiftSession[], void>({
       query: () => '/workouts/lift-history',
       providesTags: ['WorkoutHistory']

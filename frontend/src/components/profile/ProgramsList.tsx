@@ -5,7 +5,6 @@ import {
   useRef,
   useState,
   memo,
-  KeyboardEvent,
   ReactElement
 } from 'react'
 import clsx from 'clsx'
@@ -18,14 +17,7 @@ import {
   useReducedMotion
 } from 'motion/react'
 import { cn } from '@/lib/utils'
-import {
-  ChevronLeft,
-  ChevronRight,
-  Power,
-  Search,
-  Trash2,
-  X
-} from 'lucide-react'
+import { Power, Trash2 } from 'lucide-react'
 import { setProgramActive, deleteProgram } from '@/services/programsAPI'
 import { useGetProgramsQuery, usePrefetch } from '@/services/protectedRoutesAPI'
 import { ProgramSummary } from '@/types/programCreation'
@@ -48,6 +40,8 @@ import {
   panelTitleClass,
   skeletonClass
 } from './profileStyles'
+import { PageDots } from './PageDots'
+import { SearchBar } from './SearchBar'
 import {
   normalizeSearchQuery,
   pageCountFor,
@@ -229,185 +223,6 @@ const ProgramsSkeleton = () => (
     <SkeletonRows count={3} />
   </ul>
 )
-
-interface SearchBarProps {
-  query: string
-  isPending: boolean
-  onQueryChange: (query: string) => void
-}
-
-const SearchBar = ({ query, isPending, onQueryChange }: SearchBarProps) => {
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== 'Escape') return
-    if (query) {
-      event.preventDefault()
-      onQueryChange('')
-    } else {
-      inputRef.current?.blur()
-    }
-  }
-
-  return (
-    <div
-      role="search"
-      className="border-b border-neutral-800 px-4 py-3 sm:px-6"
-    >
-      <div className="relative">
-        <span
-          aria-hidden
-          className="pointer-events-none absolute left-3 top-1/2 grid size-4 -translate-y-1/2 place-items-center"
-        >
-          <Search
-            className={cn(
-              'col-start-1 row-start-1 size-4 text-neutral-500 transition-[opacity,transform] duration-150 ease-out-strong',
-              isPending && 'scale-50 opacity-0'
-            )}
-          />
-          <span
-            className={cn(
-              'col-start-1 row-start-1 transition-opacity duration-150',
-              isPending ? 'opacity-100 delay-100' : 'opacity-0'
-            )}
-          >
-            <svg
-              viewBox="0 0 16 16"
-              fill="none"
-              className="block size-4 animate-[spin_0.7s_linear_infinite] will-change-transform"
-            >
-              <circle
-                cx="8"
-                cy="8"
-                r="6.25"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                className="text-neutral-700"
-              />
-              <path
-                d="M8 1.75a6.25 6.25 0 0 1 6.25 6.25"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                className="text-app-colors-300"
-              />
-            </svg>
-          </span>
-        </span>
-        <input
-          ref={inputRef}
-          type="search"
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Search programs"
-          aria-label="Search saved programs by name"
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-          enterKeyHint="search"
-          className="h-11 w-full appearance-none rounded-md border border-neutral-800 bg-neutral-900/60 pl-9 pr-11 text-base text-neutral-50 outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-neutral-500 focus-visible:border-app-colors-300/60 focus-visible:ring-1 focus-visible:ring-app-colors-300/60 sm:h-10 sm:text-sm [&::-webkit-search-cancel-button]:appearance-none"
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => {
-              onQueryChange('')
-              inputRef.current?.focus()
-            }}
-            aria-label="Clear search"
-            className="absolute right-0.5 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center rounded-md text-neutral-400 outline-none transition-[transform,color] duration-150 ease-out-strong [-webkit-tap-highlight-color:transparent] hover:text-neutral-50 focus-visible:ring-1 focus-visible:ring-app-colors-300 active:scale-[0.9] sm:size-9 [&_svg]:size-4"
-          >
-            <X aria-hidden />
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
-
-interface PageDotsProps {
-  pageCount: number
-  pageIndex: number
-  onPageChange: (index: number) => void
-  onPageIntent: (index: number) => void
-}
-
-const pagerArrowClass = cn(
-  iconButtonClass,
-  '[-webkit-tap-highlight-color:transparent] aria-disabled:pointer-events-none aria-disabled:opacity-30'
-)
-
-const PageDots = ({
-  pageCount,
-  pageIndex,
-  onPageChange,
-  onPageIntent
-}: PageDotsProps) => {
-  const isFirst = pageIndex === 0
-  const isLast = pageIndex === pageCount - 1
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key === 'ArrowLeft' && !isFirst) onPageChange(pageIndex - 1)
-    if (event.key === 'ArrowRight' && !isLast) onPageChange(pageIndex + 1)
-  }
-
-  return (
-    <nav
-      aria-label="Saved programs pages"
-      onKeyDown={handleKeyDown}
-      className="flex items-center justify-between gap-2 border-t border-neutral-800 px-2 py-1 sm:px-4"
-    >
-      <button
-        type="button"
-        onClick={() => !isFirst && onPageChange(pageIndex - 1)}
-        aria-disabled={isFirst}
-        aria-label="Previous page"
-        className={pagerArrowClass}
-      >
-        <ChevronLeft aria-hidden />
-      </button>
-
-      <div className="flex min-w-0 flex-wrap items-center justify-center">
-        {Array.from({ length: pageCount }, (_, index) => {
-          const isCurrent = index === pageIndex
-          return (
-            <button
-              key={index}
-              type="button"
-              onClick={() => onPageChange(index)}
-              // Start loading a far page on hover so the click lands on data
-              onPointerEnter={() => onPageIntent(index)}
-              onFocus={() => onPageIntent(index)}
-              aria-label={`Page ${index + 1} of ${pageCount}`}
-              aria-current={isCurrent ? 'page' : undefined}
-              className="group grid h-10 w-6 place-items-center rounded-md outline-none [-webkit-tap-highlight-color:transparent] focus-visible:ring-1 focus-visible:ring-app-colors-300"
-            >
-              <span
-                className={cn(
-                  'block h-1.5 rounded-full transition-[width,background-color] duration-300 ease-out-strong motion-reduce:transition-none',
-                  isCurrent
-                    ? 'w-4 bg-app-colors-300'
-                    : 'w-1.5 bg-neutral-600 [@media(hover:hover)]:group-hover:bg-neutral-400'
-                )}
-              />
-            </button>
-          )
-        })}
-      </div>
-
-      <button
-        type="button"
-        onClick={() => !isLast && onPageChange(pageIndex + 1)}
-        aria-disabled={isLast}
-        aria-label="Next page"
-        className={pagerArrowClass}
-      >
-        <ChevronRight aria-hidden />
-      </button>
-    </nav>
-  )
-}
 
 interface ProgramPageRowsProps {
   pageIndex: number
@@ -659,6 +474,8 @@ export const ProgramsList = (): ReactElement => {
       ) : (
         <>
           <SearchBar
+            placeholder="Search programs"
+            label="Search saved programs by name"
             query={query}
             isPending={isSearchPending}
             onQueryChange={setQuery}
@@ -761,6 +578,7 @@ export const ProgramsList = (): ReactElement => {
 
               {pageCount > 1 && (
                 <PageDots
+                  label="Saved programs pages"
                   pageCount={pageCount}
                   pageIndex={pageIndex}
                   onPageChange={goToPage}

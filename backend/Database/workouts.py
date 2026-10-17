@@ -2,6 +2,7 @@ from datetime import date
 from typing import Dict, Any
 from ..models.workouts import WorkoutSubmission
 from ..utils.lifts import group_lift_sets
+from ..utils.workoutSearch import workout_matches
 from .supabase import supabase
 import ast
 
@@ -141,53 +142,93 @@ def get_lift_history(user_id: str, since: date) -> Dict[str, Any]:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-def get_recent_workouts(user_id: str, limit: int, offset: int) -> Dict[str, Any]:
-    try:
-        response = (
+HISTORY_COLUMNS = (
+    "id, completed_at, day, focus, is_completed, "
+    "workout_programs(program_name), "
+    "exercise_set_logs(name, exercise_order, set_number, reps, weight, weight_unit)"
+)
+SEARCH_COLUMNS = "id, day, focus, workout_programs(program_name), exercise_set_logs(name)"
+SEARCH_PAGE_SIZE = 1000
+SEARCH_MAX_PAGES = 10
+
+def _to_history_entry(row: Dict[str, Any]) -> Dict[str, Any]:
+    exercises: Dict[tuple, Dict[str, Any]] = {}
+    for s in sorted(
+        row.get("exercise_set_logs") or [],
+        key=lambda s: (s.get("exercise_order") or 0, s["set_number"])
+    ):
+        key = (s.get("exercise_order") or 0, s["name"])
+        exercise = exercises.setdefault(key, {"name": s["name"], "sets": []})
+        exercise["sets"].append({
+            "set_number": s["set_number"],
+            "reps": s["reps"],
+            "weight": float(s["weight"]) if s["weight"] is not None else None,
+            "weight_unit": s["weight_unit"]
+        })
+
+    program = row.get("workout_programs") or {}
+    return {
+        "id": row["id"],
+        "date": row["completed_at"],
+        "day": row.get("day"),
+        "focus": row.get("focus"),
+        "program_name": program.get("program_name"),
+        "is_completed": bool(row.get("is_completed")),
+        "exercises": list(exercises.values())
+    }
+
+def _newest_first(query):
+    return query.order("completed_at", desc=True).order("id", desc=True)
+
+# PostgREST can't OR an ilike across embedded tables, so matching happens here
+def _matching_workout_ids(user_id: str, terms: list[str]) -> list[str]:
+    ids: list[str] = []
+    for page in range(SEARCH_MAX_PAGES):
+        start = page * SEARCH_PAGE_SIZE
+        response = _newest_first(
             supabase.table("completed_workouts")
-            .select(
-                "id, completed_at, day, focus, is_completed, "
-                "workout_programs(program_name), "
-                "exercise_set_logs(name, exercise_order, set_number, reps, weight, weight_unit)"
-            )
+            .select(SEARCH_COLUMNS)
             .eq("user_id", user_id)
-            .order("completed_at", desc=True)
-            .range(offset, offset + limit)
-            .execute()
-        )
-        data = ast.literal_eval(str(response.data))
-        rows = data or []
+        ).range(start, start + SEARCH_PAGE_SIZE - 1).execute()
+        batch = ast.literal_eval(str(response.data)) or []
+        ids.extend(row["id"] for row in batch if workout_matches(row, terms))
+        if len(batch) < SEARCH_PAGE_SIZE:
+            break
+    return ids
 
-        workouts = []
-        for row in rows[:limit]:
-            exercises: Dict[tuple, Dict[str, Any]] = {}
-            for s in sorted(
-                row.get("exercise_set_logs") or [],
-                key=lambda s: (s.get("exercise_order") or 0, s["set_number"])
-            ):
-                key = (s.get("exercise_order") or 0, s["name"])
-                exercise = exercises.setdefault(key, {"name": s["name"], "sets": []})
-                exercise["sets"].append({
-                    "set_number": s["set_number"],
-                    "reps": s["reps"],
-                    "weight": float(s["weight"]) if s["weight"] is not None else None,
-                    "weight_unit": s["weight_unit"]
-                })
+def _search_workouts(user_id: str, limit: int, offset: int, terms: list[str]) -> tuple[list, int]:
+    ids = _matching_workout_ids(user_id, terms)
+    page_ids = ids[offset:offset + limit]
+    if not page_ids:
+        return [], len(ids)
+    response = _newest_first(
+        supabase.table("completed_workouts")
+        .select(HISTORY_COLUMNS)
+        .eq("user_id", user_id)
+        .in_("id", page_ids)
+    ).execute()
+    return ast.literal_eval(str(response.data)) or [], len(ids)
 
-            program = row.get("workout_programs") or {}
-            workouts.append({
-                "id": row["id"],
-                "date": row["completed_at"],
-                "day": row.get("day"),
-                "focus": row.get("focus"),
-                "program_name": program.get("program_name"),
-                "is_completed": bool(row.get("is_completed")),
-                "exercises": list(exercises.values())
-            })
+def get_recent_workouts(user_id: str, limit: int, offset: int, terms: list[str] | None = None) -> Dict[str, Any]:
+    try:
+        if terms:
+            rows, total = _search_workouts(user_id, limit, offset, terms)
+        else:
+            response = _newest_first(
+                supabase.table("completed_workouts")
+                .select(HISTORY_COLUMNS, count="exact")
+                .eq("user_id", user_id)
+            ).range(offset, offset + limit - 1).execute()
+            rows = ast.literal_eval(str(response.data)) or []
+            total = response.count or 0
 
         return {
             "success": True,
-            "data": {"workouts": workouts, "has_more": len(rows) > limit}
+            "data": {
+                "workouts": [_to_history_entry(row) for row in rows[:limit]],
+                "total": total,
+                "has_more": offset + len(rows) < total
+            }
         }
     except Exception as e:
         return {"success": False, "error": str(e)}

@@ -69,7 +69,14 @@ export interface WorkoutHistoryEntry {
 
 export interface WorkoutHistoryResponse {
   workouts: WorkoutHistoryEntry[]
+  total: number
   has_more: boolean
+}
+
+export interface WorkoutHistoryArgs {
+  page: number
+  limit: number
+  q: string
 }
 
 export interface LiftSet {

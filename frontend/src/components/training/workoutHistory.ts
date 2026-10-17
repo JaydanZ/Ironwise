@@ -1,6 +1,6 @@
 import { WorkoutHistoryEntry, WorkoutHistorySet } from '@/types/workoutSession'
 
-export const HISTORY_PAGE_SIZE = 10
+export const HISTORY_PAGE_SIZE = 5
 export const HISTORY_MAX_ITEMS = 100
 
 export const parseLogDate = (value: string): Date | null => {

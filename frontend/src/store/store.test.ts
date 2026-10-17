@@ -15,15 +15,17 @@ const seedHistory = () =>
   store.dispatch(
     protectedApiSlice.util.upsertQueryData(
       'getWorkoutHistory',
-      { limit: 10 },
-      { workouts: [], has_more: false }
+      { page: 0, limit: 10, q: '' },
+      { workouts: [], total: 0, has_more: false }
     )
   )
 
 const cachedHistory = () =>
-  protectedApiSlice.endpoints.getWorkoutHistory.select({ limit: 10 })(
-    store.getState()
-  ).data
+  protectedApiSlice.endpoints.getWorkoutHistory.select({
+    page: 0,
+    limit: 10,
+    q: ''
+  })(store.getState()).data
 
 describe('store auth listener', () => {
   it('clears cached API data on logout', async () => {

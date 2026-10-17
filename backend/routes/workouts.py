@@ -13,6 +13,7 @@ from ..Database.workouts import (
     get_lift_history
 )
 from ..middleware.authenticateToken import get_current_user
+from ..utils.programs import program_search_terms
 from ..utils.streak import compute_streak, scheduled_weekdays
 import ast
 import logging
@@ -21,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 HISTORY_MAX_LIMIT = 100
 HISTORY_MAX_OFFSET = 10_000
+HISTORY_SEARCH_MAX_LENGTH = 100
+HISTORY_SEARCH_MAX_TERMS = 8
 LIFT_HISTORY_DAYS = 365
 
 workouts_router = APIRouter(
@@ -89,9 +92,11 @@ async def previous_performance(
 async def workout_history(
     limit: Annotated[int, Query(ge=1, le=HISTORY_MAX_LIMIT)] = 10,
     offset: Annotated[int, Query(ge=0, le=HISTORY_MAX_OFFSET)] = 0,
+    q: Annotated[str, Query(max_length=HISTORY_SEARCH_MAX_LENGTH)] = "",
     user_id: str = Depends(get_current_user)
 ):
-    result = get_recent_workouts(user_id, limit, offset)
+    terms = program_search_terms(q, HISTORY_SEARCH_MAX_TERMS)
+    result = get_recent_workouts(user_id, limit, offset, terms)
     if not result["success"]:
         logger.error("Failed to load workout history: %s", result.get("error"))
         raise HTTPException(status_code=500, detail="Failed to load workout history")
