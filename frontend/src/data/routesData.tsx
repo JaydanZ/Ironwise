@@ -1,6 +1,6 @@
 import { IoHomeOutline } from 'react-icons/io5'
 import { LuDumbbell } from 'react-icons/lu'
-import { RiUserCommunityLine } from 'react-icons/ri'
+// import { RiUserCommunityLine } from 'react-icons/ri'
 import { AiOutlineLogin } from 'react-icons/ai'
 import { IoPersonOutline } from 'react-icons/io5'
 
@@ -29,13 +29,14 @@ export const LOGGED_IN_ROUTES: routeData[] = [
     href: '/profile',
     icon: <IoPersonOutline />,
     params: {}
-  },
-  {
-    id: 'Community',
-    href: '/community',
-    icon: <RiUserCommunityLine />,
-    params: {}
   }
+  // Hidden until the community feature is fleshed out
+  // {
+  //   id: 'Community',
+  //   href: '/community',
+  //   icon: <RiUserCommunityLine />,
+  //   params: {}
+  // }
 ]
 export const LOGGED_OUT_ROUTES = [
   {
