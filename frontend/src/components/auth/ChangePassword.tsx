@@ -19,7 +19,7 @@ import { userLogin } from '@/features/auth/authSlice'
 import { useChangePasswordMutation } from '@/services/protectedRoutesAPI'
 import {
   confirmPasswordError,
-  MAX_PASSWORD_BYTES,
+  existingPasswordError,
   newPasswordError
 } from '@/constants/authRules'
 import { authErrorMessage } from './authErrors'
@@ -90,14 +90,7 @@ export function ChangePassword() {
             <form.Field
               name="oldPassword"
               validators={{
-                onChange: ({ value }) => {
-                  if (value.length === 0) return 'Current password is required'
-                  if (
-                    new TextEncoder().encode(value).length > MAX_PASSWORD_BYTES
-                  )
-                    return 'Password is too long'
-                  return undefined
-                }
+                onChange: ({ value }) => existingPasswordError(value)
               }}
             >
               {(field) => (

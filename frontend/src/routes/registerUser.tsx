@@ -6,7 +6,6 @@ import {
   redirect
 } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
-import axios from 'axios'
 import {
   Card,
   CardHeader,
@@ -21,9 +20,10 @@ import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { signupUser } from '@/services/authAPI'
 import { SignupUser } from '@/types/auth'
+import { confirmPasswordError, newPasswordError } from '@/constants/authRules'
+import { authErrorMessage } from '@/components/auth/authErrors'
 
 const MIN_USERNAME_LENGTH = 4
-const MIN_PASSWORD_LENGTH = 8
 
 export const Route = createFileRoute('/registerUser')({
   component: RouteComponent,
@@ -67,15 +67,10 @@ function RouteComponent() {
         setIsLoading(false)
         navigate({ to: '/login' })
       } catch (error) {
-        if (axios.isAxiosError(error)) {
-          if (error.response) {
-            setResponseError(error.response.data.detail)
-          }
-          setIsLoading(false)
-        } else {
-          console.error(error)
-          setIsLoading(false)
-        }
+        setResponseError(
+          authErrorMessage(error, 'Couldn’t create your account. Try again.')
+        )
+        setIsLoading(false)
       }
     }
   })
@@ -105,7 +100,7 @@ function RouteComponent() {
                     if (formattedUsername.length === 0)
                       return 'Username is required'
                     if (formattedUsername.length < MIN_USERNAME_LENGTH)
-                      return `Username must be greater than ${MIN_USERNAME_LENGTH} Characters.`
+                      return `Username must be at least ${MIN_USERNAME_LENGTH} characters`
                     return undefined
                   }
                 }}
@@ -163,14 +158,7 @@ function RouteComponent() {
                 <form.Field
                   name="password"
                   validators={{
-                    onChange: ({ value }) => {
-                      const formattedPassword = value.trim()
-                      if (formattedPassword.length === 0)
-                        return 'Password is required'
-                      if (formattedPassword.length < MIN_PASSWORD_LENGTH)
-                        return `Password must be greater than ${MIN_PASSWORD_LENGTH} characters`
-                      return undefined
-                    }
+                    onChange: ({ value }) => newPasswordError(value)
                   }}
                 >
                   {(field) => (
@@ -180,6 +168,7 @@ function RouteComponent() {
                         id={field.name}
                         value={field.state.value}
                         type="password"
+                        autoComplete="new-password"
                         onChange={(e) => field.handleChange(e.target.value)}
                       />
                       {field.state.meta.errors.length > 0 && (
@@ -193,15 +182,12 @@ function RouteComponent() {
                 <form.Field
                   name="confirmPassword"
                   validators={{
-                    onChange: ({ value, fieldApi }) => {
-                      const formattedConfirmPass = value.trim()
-                      if (
-                        formattedConfirmPass !==
+                    onChangeListenTo: ['password'],
+                    onChange: ({ value, fieldApi }) =>
+                      confirmPasswordError(
+                        value,
                         fieldApi.form.getFieldValue('password')
                       )
-                        return 'Passwords do not match'
-                      return undefined
-                    }
                   }}
                 >
                   {(field) => (
@@ -211,6 +197,7 @@ function RouteComponent() {
                         id={field.name}
                         value={field.state.value}
                         type="password"
+                        autoComplete="new-password"
                         onChange={(e) => field.handleChange(e.target.value)}
                       />
                       {field.state.meta.errors.length > 0 && (

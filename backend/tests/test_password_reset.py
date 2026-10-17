@@ -1,4 +1,3 @@
-import bcrypt
 import fakeredis
 import jwt
 import pytest
@@ -9,6 +8,7 @@ from backend.routes import auth as auth_routes
 from backend.routes import users as users_routes
 from backend.utils import passwordReset
 from backend.utils.limiter import limiter
+from backend.utils.passwords import hash_password, verify_password
 
 USER_ID = "user-1"
 EMAIL = "lifter@example.com"
@@ -45,8 +45,8 @@ def client(monkeypatch, redis):
     user = {
         "id": USER_ID,
         "email": EMAIL,
-        "username": "lifter",
-        "password": bcrypt.hashpw(OLD_PASSWORD.encode(), bcrypt.gensalt(4)).decode(),
+        "username": "ironlifter",
+        "password": hash_password(OLD_PASSWORD),
     }
     codes, notices = [], []
 
@@ -57,7 +57,7 @@ def client(monkeypatch, redis):
         return user if user_id == USER_ID else None
 
     def update_password(user_id, new_password):
-        user["password"] = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt(4)).decode()
+        user["password"] = hash_password(new_password)
 
     for module in (auth_routes, users_routes):
         monkeypatch.setattr(module, "find_user_by_id", find_by_id)
@@ -75,7 +75,7 @@ def client(monkeypatch, redis):
 
 
 def password_matches(client, password):
-    return bcrypt.checkpw(password.encode(), client.user["password"].encode())
+    return verify_password(password, client.user["password"])
 
 
 def request_code(client, email=EMAIL):
@@ -207,13 +207,23 @@ def test_reset_token_expires_after_ten_minutes(client, redis):
 
 @pytest.mark.parametrize("password, confirm_password", [
     ("short", None),
-    ("x" * 73, None),
+    ("x" * 129, None),
     (NEW_PASSWORD, "different-password"),
-], ids=["too short", "over 72 bytes", "mismatch"])
+], ids=["too short", "over 128 chars", "mismatch"])
 def test_invalid_new_password_is_rejected_without_using_the_token(client, password, confirm_password):
     token = reset_token(client)
 
     assert confirm(client, token, password, confirm_password).status_code == 422
+    assert password_matches(client, OLD_PASSWORD)
+    assert confirm(client, token).status_code == 200
+
+
+@pytest.mark.parametrize("password", ["breached-password", "IronLifter", EMAIL], ids=["breached", "username", "email"])
+def test_weak_new_password_is_rejected_without_using_the_token(client, breached_passwords, password):
+    breached_passwords.add("breached-password")
+    token = reset_token(client)
+
+    assert confirm(client, token, password).status_code == 400
     assert password_matches(client, OLD_PASSWORD)
     assert confirm(client, token).status_code == 200
 
@@ -262,3 +272,14 @@ def test_change_password_is_rate_limited_per_user(client):
 
     assert statuses[:5] == [400] * 5
     assert statuses[5] == 429
+
+
+@pytest.mark.parametrize("password", ["breached-password", "IronLifter"], ids=["breached", "username"])
+def test_change_password_rejects_weak_new_password(client, breached_passwords, password):
+    breached_passwords.add("breached-password")
+
+    response = change_password(client, new=password)
+
+    assert response.status_code == 400
+    assert password_matches(client, OLD_PASSWORD)
+    assert client.notices == []

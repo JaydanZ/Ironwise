@@ -15,7 +15,9 @@ export const authErrorMessage = (error: unknown, fallback: string) => {
     detail = (error as { data?: { detail?: unknown } }).data?.detail
   }
 
-  if (status === 429) return 'Too many attempts. Wait a minute and try again.'
+  // Rate limiter 429s carry no detail; the account lockout's does
+  if (status === 429 && typeof detail !== 'string')
+    return 'Too many attempts. Wait a minute and try again.'
   // 422 details are lists of field errors, not readable messages
   if (typeof detail === 'string') return detail
   return fallback

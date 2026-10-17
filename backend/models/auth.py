@@ -1,21 +1,11 @@
 from typing import Annotated
-from pydantic import AfterValidator, BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 MIN_PASSWORD_LENGTH = 8
-MAX_PASSWORD_BYTES = 72
+MAX_PASSWORD_LENGTH = 128
 
-def _check_password_fits_bcrypt(password: str) -> str:
-    if len(password.encode("utf-8")) > MAX_PASSWORD_BYTES:
-        raise ValueError("Password is too long")
-    return password
-
-def _check_password(password: str) -> str:
-    if len(password) < MIN_PASSWORD_LENGTH:
-        raise ValueError(f"Password must be at least {MIN_PASSWORD_LENGTH} characters")
-    return _check_password_fits_bcrypt(password)
-
-NewPassword = Annotated[str, AfterValidator(_check_password)]
-ExistingPassword = Annotated[str, Field(min_length=1), AfterValidator(_check_password_fits_bcrypt)]
+NewPassword = Annotated[str, Field(min_length=MIN_PASSWORD_LENGTH, max_length=MAX_PASSWORD_LENGTH)]
+ExistingPassword = Annotated[str, Field(min_length=1, max_length=MAX_PASSWORD_LENGTH)]
 
 
 class _NewPasswordPair(BaseModel):

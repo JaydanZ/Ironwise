@@ -2,7 +2,6 @@ import logging
 import ast
 from datetime import date, timedelta
 from uuid import UUID
-import bcrypt
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends, Request
 from pydantic import BaseModel
 from ..Database.programs import get_owned_program
@@ -14,7 +13,9 @@ from ..models.auth import AuthorizedReturn, ChangePassword, Token
 from ..utils.createToken import create_access_token, create_refresh_token
 from ..utils.email import send_password_changed_email
 from ..utils.limiter import limiter, user_key
+from ..utils.passwordPolicy import reject_weak_password
 from ..utils.passwordReset import revoke_sessions
+from ..utils.passwords import verify_password
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +78,10 @@ def change_password(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if not bcrypt.checkpw(body.old_password.encode("utf-8"), user["password"].encode("utf-8")):
+    if not verify_password(body.old_password, user["password"]):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    reject_weak_password(body.new_password, user["email"], user["username"])
 
     update_user_password(user["id"], body.new_password)
 

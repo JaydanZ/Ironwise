@@ -78,6 +78,10 @@ def issue_reset_token(user_id: str) -> str:
     return token
 
 
+def peek_reset_token(token: str) -> str | None:
+    return cast(str | None, redis_client.get(_token_key(token)))
+
+
 def consume_reset_token(token: str) -> str | None:
     return cast(str | None, redis_client.getdel(_token_key(token)))
 

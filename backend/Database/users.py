@@ -1,12 +1,12 @@
-import bcrypt
 import json
 from typing import Any, cast
 from postgrest.exceptions import APIError
 from ..models.users import CreateUser
+from ..utils.passwords import hash_password
 from .supabase import supabase
 
 def insert_user(user: CreateUser):
-    hashed_password = bcrypt.hashpw(user.password.encode('utf-8'),bcrypt.gensalt()).decode('utf-8')
+    hashed_password = hash_password(user.password)
 
     response = supabase.table('users').insert({
         'username': user.username,
@@ -54,7 +54,7 @@ def update_user_streak(user_id: str, streak: int):
         return {"success": False, "error": str(e)}
 
 def update_user_password(user_id: str, new_password: str):
-    hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    hashed_password = hash_password(new_password)
     supabase.table('users').update({"password": hashed_password}).eq('id', user_id).execute()
 
 def set_users_active_program(program_id: str | None, user_id: str):

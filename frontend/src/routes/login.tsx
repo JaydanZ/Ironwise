@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
-import axios from 'axios'
 import { useAsyncDispatch } from '@/store/store'
 import { userLogin } from '@/features/auth/authSlice'
 import {
@@ -18,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { UserCredentials } from '@/types/auth'
 import { loginUser } from '@/services/authAPI'
+import { authErrorMessage } from '@/components/auth/authErrors'
 
 export const Route = createFileRoute('/login')({
   component: RouteComponent
@@ -63,15 +63,8 @@ function RouteComponent() {
         setIsLoading(false)
         navigate({ to: '/home' })
       } catch (error: unknown) {
-        if (axios.isAxiosError(error)) {
-          if (error.response) {
-            setResponseError(error.response.data.detail)
-          }
-          setIsLoading(false)
-        } else {
-          console.error(error)
-          setIsLoading(false)
-        }
+        setResponseError(authErrorMessage(error, 'Couldn’t log in. Try again.'))
+        setIsLoading(false)
       }
     }
   })

@@ -1,4 +1,3 @@
-import bcrypt
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
@@ -6,11 +5,14 @@ from ..utils.createToken import create_access_token, create_refresh_token
 from ..utils.validateToken import validateRefreshToken
 from ..Database.users import insert_user, find_user_by_email, find_user_by_id, update_user_password
 from ..models.users import CreateUser, LoginUser
-from ..models.auth import MAX_PASSWORD_BYTES, Token, AuthorizedReturn, RefreshToken, PasswordResetRequest, PasswordResetVerify, PasswordResetConfirm
+from ..models.auth import Token, AuthorizedReturn, RefreshToken, PasswordResetRequest, PasswordResetVerify, PasswordResetConfirm
 from ..utils.email import send_reset_code_email, send_password_changed_email
 from ..utils.limiter import limiter
+from ..utils.loginAttempts import clear_failed_logins, is_locked_out, record_failed_login
+from ..utils.passwordPolicy import reject_weak_password
+from ..utils.passwords import needs_rehash, verify_password
 from ..utils.passwordReset import (
-    CODE_TTL_SECONDS, issue_code, check_code, issue_reset_token, consume_reset_token, revoke_sessions
+    CODE_TTL_SECONDS, issue_code, check_code, issue_reset_token, peek_reset_token, consume_reset_token, revoke_sessions
 )
 
 from ..Database.redisClient import redis_client
@@ -22,23 +24,11 @@ auth_router = APIRouter(
     tags=['auth']
 )
 
-MIN_USERNAME_LENGTH = 4
-MIN_PASSWORD_LENGTH = 8
-
 @auth_router.post("/register", status_code=201)
-def create_user(user: CreateUser):
+@limiter.limit("5/minute")
+def create_user(request: Request, user: CreateUser):
+    reject_weak_password(user.password, user.email, user.username)
 
-    ## Validate user info
-    if user.username is None or user.email is None or user.password is None:
-        raise HTTPException(status_code=404, detail="Required user data not found")
-    
-    if len(user.username) < MIN_USERNAME_LENGTH or len(user.password) < MIN_PASSWORD_LENGTH:
-        raise HTTPException(status_code=400, detail="User data failed to meet requirements")
-
-    ## bcrypt rejects passwords over 72 bytes
-    if len(user.password.encode("utf-8")) > MAX_PASSWORD_BYTES:
-        raise HTTPException(status_code=400, detail="User data failed to meet requirements")
-    
     ## Check if user already exists
     existing_user = find_user_by_email(user.email)
     if existing_user is not None:
@@ -51,27 +41,23 @@ def create_user(user: CreateUser):
 
 
 @auth_router.post("/login", status_code=201)
-def login_user(user: LoginUser):
+@limiter.limit("10/minute")
+def login_user(request: Request, user: LoginUser):
+    if is_locked_out(user.email):
+        raise HTTPException(status_code=429, detail="Too many failed attempts. Try again later.")
 
-    ## Validate user info
-    if user.email is None or user.password is None:
-        raise HTTPException(status_code=404, detail="Required user data not found")
-    
-    if len(user.password) < MIN_PASSWORD_LENGTH:
-        raise HTTPException(status_code=400, detail="User data failed to meet requirements")
-
-    ## No stored password is over 72 bytes, and bcrypt would raise on it
-    if len(user.password.encode("utf-8")) > MAX_PASSWORD_BYTES:
-        raise HTTPException(status_code=401, detail="Invalid Credentials")
-    
-    ## Check if user exists
     existing_user = find_user_by_email(user.email)
-    if existing_user is None:
+    ## Verify before checking existence so unknown emails also pay for a hash
+    password_ok = verify_password(user.password, existing_user["password"] if existing_user is not None else None)
+    if existing_user is None or not password_ok:
+        record_failed_login(user.email)
         raise HTTPException(status_code=401, detail="Invalid Credentials")
 
-    ## Check if passwords match
-    if not bcrypt.checkpw(user.password.encode('utf-8'), existing_user["password"].encode("utf-8")):
-        raise HTTPException(status_code=401, detail="Invalid Credentials")
+    clear_failed_logins(user.email)
+
+    ## The plaintext is only available at login, so legacy bcrypt hashes are upgraded here
+    if needs_rehash(existing_user["password"]):
+        update_user_password(existing_user["id"], user.password)
     
     ## Generate token for user
     user_id = existing_user["id"]
@@ -150,10 +136,16 @@ def verify_password_reset_code(body: PasswordResetVerify):
 
 @auth_router.post("/password-reset/confirm", status_code=200)
 def confirm_password_reset(body: PasswordResetConfirm, background_tasks: BackgroundTasks):
-    user_id = consume_reset_token(body.reset_token)
+    reset_expired = HTTPException(status_code=400, detail="Reset session expired, request a new code")
+    user_id = peek_reset_token(body.reset_token)
     user = find_user_by_id(user_id) if user_id is not None else None
     if user is None:
-        raise HTTPException(status_code=400, detail="Reset session expired, request a new code")
+        raise reset_expired
+
+    ## Checked before consuming the token so a rejected password doesn't end the reset session
+    reject_weak_password(body.new_password, user["email"], user["username"])
+    if consume_reset_token(body.reset_token) != user["id"]:
+        raise reset_expired
 
     update_user_password(user["id"], body.new_password)
     revoke_sessions(user["id"])

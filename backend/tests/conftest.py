@@ -1,5 +1,8 @@
 import os
 
+import fakeredis
+import pytest
+
 # Settings are read when the app is imported, so fake ones must exist first.
 TEST_ENV = {
     "CLIENT_URL": "http://localhost:5173",
@@ -14,3 +17,44 @@ TEST_ENV = {
 }
 for name, value in TEST_ENV.items():
     os.environ[name] = value
+
+
+
+## Tests add to this set to make a password count as breached; HIBP is never called
+@pytest.fixture(autouse=True)
+def breached_passwords(monkeypatch):
+    from backend.utils import passwordPolicy
+
+    breached: set[str] = set()
+    monkeypatch.setattr(passwordPolicy, "is_password_breached", lambda password: password in breached)
+    return breached
+
+
+@pytest.fixture(autouse=True)
+def login_attempts_redis(monkeypatch):
+    from backend.utils import loginAttempts
+    from backend.utils.limiter import limiter
+
+    fake = fakeredis.FakeRedis(decode_responses=True)
+    monkeypatch.setattr(loginAttempts, "redis_client", fake)
+    limiter.reset()
+    return fake
+
+
+class SpyHasher:
+    def __init__(self, real):
+        self.real, self.verified = real, []
+
+    def verify(self, stored, password):
+        self.verified.append(stored)
+        return self.real.verify(stored, password)
+
+
+## Records every Argon2 verification while still running the real one
+@pytest.fixture
+def hasher_spy(monkeypatch):
+    from backend.utils import passwords
+
+    spy = SpyHasher(passwords._hasher)
+    monkeypatch.setattr(passwords, "_hasher", spy)
+    return spy
