@@ -28,7 +28,7 @@ function RouteComponent() {
     error !== undefined && !('status' in error && error.status === 404)
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl justify-center px-4 pb-32 pt-8 sm:px-8 min-[800px]:pb-16 min-[800px]:pt-28">
+    <main className="mx-auto flex w-full max-w-3xl justify-center px-4 pb-48 pt-4 sm:px-8 min-[800px]:pb-16 min-[800px]:pt-24">
       {program ? (
         <ManualProgramCreation key={program.id} program={program} />
       ) : isLoading ? (
