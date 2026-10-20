@@ -1,6 +1,7 @@
 # Ironwise
 
 Reps and workouts, guided by AI intelligence.
+https://ironwise.net/
 
 Ironwise is a workout planner and training log. You answer five quick questions (your goal, how long you've been lifting, how many days a week you can train, and your age, weight and gender) and it builds a weekly program for you, day by day, with sets, reps and a short coaching tip for every exercise. Once you have an account you can save that program, edit it, make it your active plan, and log every session against it. Over time the app turns those logs into personal records, strength trends and a workout streak.
 
