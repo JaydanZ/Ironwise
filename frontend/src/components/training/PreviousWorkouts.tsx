@@ -232,6 +232,7 @@ export const PreviousWorkouts = () => {
   const dragControls = useDragControls()
   const pagerRef = useRef<HTMLDivElement>(null)
   const didDragRef = useRef(false)
+  const isPagingRef = useRef(false)
   const prefetchHistory = usePrefetch('getWorkoutHistory', { ifOlderThan: 60 })
 
   // Every logged workout, unfiltered: drives the empty state and the count
@@ -292,15 +293,16 @@ export const PreviousWorkouts = () => {
       `[data-page="${pageIndex}"]`
     )
     if (!pageNode) return
-    const observer = new ResizeObserver(() =>
-      setPageHeight(pageNode.offsetHeight)
-    )
+    const observer = new ResizeObserver(() => {
+      if (isPagingRef.current) setPageHeight(pageNode.offsetHeight)
+    })
     observer.observe(pageNode)
     return () => observer.disconnect()
   }, [pageIndex, hasPages])
 
   const goToPage = (index: number) => {
     if (index === pageIndex || index < 0 || index >= pageCount) return
+    isPagingRef.current = true
     setIsPaging(true)
     setPage({ index, direction: index > pageIndex ? 1 : -1 })
   }
@@ -441,7 +443,9 @@ export const PreviousWorkouts = () => {
                       opacity: { duration: 0.2, ease: 'easeOut' }
                     }}
                     onAnimationComplete={(definition) => {
-                      if (definition === 'center') setIsPaging(false)
+                      if (definition !== 'center') return
+                      isPagingRef.current = false
+                      setIsPaging(false)
                     }}
                     drag={pageCount > 1 ? 'x' : false}
                     dragListener={false}
