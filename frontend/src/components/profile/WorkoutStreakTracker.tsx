@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, PointerEvent } from 'react'
+import {
+  CSSProperties,
+  PointerEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 import clsx from 'clsx'
 import { Flame } from 'lucide-react'
 import { WorkoutTracker } from '@/types/profile'
@@ -47,7 +54,10 @@ const MONTH_LABELS = [
 ]
 const DAY_LABELS = ['', 'Mon', '', 'Wed', '', 'Fri', '']
 
-const CELL = 'size-2.5 sm:size-3 lg:size-[15px] rounded-[3px]'
+const CELL =
+  'size-2.5 sm:size-3 lg:size-[15px] rounded-[3px] [--cell-half:5px] sm:[--cell-half:6px] lg:[--cell-half:7.5px]'
+
+const cascade = (index: number) => ({ '--i': index }) as CSSProperties
 
 export const WorkoutStreakTracker = ({
   data,
@@ -180,9 +190,11 @@ export const WorkoutStreakTracker = ({
             {isLoading ? (
               <span className={clsx(skeletonClass, 'inline-block h-3 w-40')} />
             ) : hasHistory ? (
-              `${totalWorkouts} ${
-                totalWorkouts === 1 ? 'workout' : 'workouts'
-              } in the last year`
+              <span className="inline-block animate-blur-in">
+                {`${totalWorkouts} ${
+                  totalWorkouts === 1 ? 'workout' : 'workouts'
+                } in the last year`}
+              </span>
             ) : (
               'Your current training streak'
             )}
@@ -205,7 +217,10 @@ export const WorkoutStreakTracker = ({
                 )}
               />
             ) : (
-              <span className="font-display text-2xl font-bold tabular-nums text-neutral-50">
+              <span
+                style={cascade(1)}
+                className="inline-block animate-blur-in font-display text-2xl font-bold tabular-nums text-neutral-50"
+              >
                 {currentStreak}
               </span>
             )}{' '}
@@ -252,7 +267,10 @@ export const WorkoutStreakTracker = ({
               aria-label={`Workout activity for the last year: ${totalWorkouts} workouts, current streak ${currentStreak} days`}
               className="flex w-max"
             >
-              <div className="sticky left-0 z-10 flex flex-col gap-[3px] bg-[#141414] pr-2 pt-5">
+              <div
+                style={cascade(1)}
+                className="sticky left-0 z-10 flex animate-fade-in flex-col gap-[3px] bg-[#141414] pr-2 pt-5"
+              >
                 {DAY_LABELS.map((day, index) => (
                   <div
                     key={index}
@@ -264,7 +282,10 @@ export const WorkoutStreakTracker = ({
               </div>
 
               <div className="flex flex-col">
-                <div className="mb-1.5 flex gap-[3px]">
+                <div
+                  style={cascade(1)}
+                  className="mb-1.5 flex animate-fade-in gap-[3px]"
+                >
                   {yearData.weeks.map((week, weekIndex) => {
                     const firstDay = week.find((day) => day !== null)
                     const prevFirstDay = yearData.weeks[weekIndex - 1]?.find(
@@ -312,8 +333,10 @@ export const WorkoutStreakTracker = ({
                         return (
                           <div
                             key={dayIndex}
+                            style={cascade(weekIndex + dayIndex)}
                             className={clsx(
                               CELL,
+                              'animate-cell-in',
                               hasWorkedOut
                                 ? 'bg-app-colors-300'
                                 : 'bg-neutral-800/70'
@@ -334,7 +357,10 @@ export const WorkoutStreakTracker = ({
             </div>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-neutral-400">
+          <div
+            style={cascade(10)}
+            className="mt-3 flex animate-fade-in flex-wrap items-center justify-between gap-3 text-xs text-neutral-400"
+          >
             <p>
               {!hasHistory
                 ? 'Day-by-day workout history isn’t recorded yet.'

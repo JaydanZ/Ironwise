@@ -204,6 +204,12 @@ html:active-view-transition-type(slide-right)::view-transition-new(root) {
   }
 }
 
+@keyframes cell-fade {
+  from {
+    background-color: transparent;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
@@ -215,9 +221,25 @@ html:active-view-transition-type(slide-right)::view-transition-new(root) {
   .animate-write-in {
     animation-delay: calc(var(--i, 0) * 28ms);
   }
+  .animate-blur-in {
+    animation-delay: calc(var(--i, 0) * 100ms);
+  }
+  .animate-fade-in {
+    animation-delay: calc(var(--i, 0) * 100ms);
+  }
+  .animate-cell-in {
+    animation-delay: calc(200ms + var(--i, 0) * 22ms);
+  }
   @media (prefers-reduced-motion: reduce) {
     .animate-write-in {
       animation: none;
+    }
+    .animate-blur-in,
+    .animate-fade-in {
+      animation: fade-in 200ms ease-out backwards;
+    }
+    .animate-cell-in {
+      animation: cell-fade 200ms ease-out backwards;
     }
   }
   ::selection {

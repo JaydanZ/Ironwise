@@ -90,6 +90,32 @@ export default {
   					transform: 'translateY(0)'
   				}
   			},
+  			'blur-in': {
+  				from: {
+  					opacity: '0',
+  					filter: 'blur(6px)',
+  					transform: 'translateY(4px)'
+  				},
+  				to: {
+  					opacity: '1',
+  					filter: 'blur(0)',
+  					transform: 'translateY(0)'
+  				}
+  			},
+  			'cell-in': {
+  				from: {
+  					backgroundColor: 'transparent',
+  					boxShadow: 'inset 0 0 0 var(--cell-half) #141414'
+  				}
+  			},
+  			'fade-in': {
+  				from: {
+  					opacity: '0'
+  				},
+  				to: {
+  					opacity: '1'
+  				}
+  			},
   			'check-draw': {
   				from: {
   					strokeDashoffset: '24'
@@ -195,6 +221,9 @@ export default {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
   			'write-in': 'write-in 420ms cubic-bezier(0.23, 1, 0.32, 1) backwards',
+  			'blur-in': 'blur-in 700ms cubic-bezier(0.23, 1, 0.32, 1) backwards',
+  			'cell-in': 'cell-in 550ms cubic-bezier(0.23, 1, 0.32, 1) backwards',
+  			'fade-in': 'fade-in 600ms cubic-bezier(0.23, 1, 0.32, 1) backwards',
   			'check-draw': 'check-draw 360ms cubic-bezier(0.23, 1, 0.32, 1) 120ms backwards',
   			'ring-out': 'ring-out 700ms cubic-bezier(0.23, 1, 0.32, 1) 200ms both',
   			'tick-in': 'tick-in 320ms cubic-bezier(0.23, 1, 0.32, 1) backwards',
