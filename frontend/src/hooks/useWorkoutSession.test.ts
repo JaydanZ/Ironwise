@@ -1,13 +1,20 @@
-import { describe, expect, it } from 'vitest'
+// @vitest-environment happy-dom
+import { beforeEach, describe, expect, it } from 'vitest'
 import { Workout } from '@/types/programCreation'
 import {
   buildSubmission,
   createEntries,
+  DRAFT_MAX_AGE_MS,
   isExerciseComplete,
   MAX_SETS,
+  parseDraft,
+  pruneDrafts,
+  restoreEntries,
   sanitizeWeight,
   sessionReducer,
-  SessionState
+  SessionState,
+  WorkoutDraft,
+  workoutDraftKey
 } from './useWorkoutSession'
 
 const workout: Workout = {
@@ -169,6 +176,99 @@ describe('useWorkoutSession helpers', () => {
       exercise_name: 'Pull Up',
       set_number: 2,
       reps: 6
+    })
+  })
+})
+
+describe('workout drafts', () => {
+  const now = Date.parse('2026-10-21T00:30:00')
+  const draft: WorkoutDraft = {
+    startedAt: now - 60 * 60 * 1000,
+    performedOn: '2026-10-20',
+    exercises: [
+      {
+        name: 'Bench Press',
+        sets: [
+          { reps: '8', weight: '135', notes: '' },
+          { reps: '6', weight: '135', notes: 'grindy' }
+        ]
+      },
+      { name: 'Pull Up', sets: [{ reps: '10', weight: '', notes: '' }] }
+    ]
+  }
+
+  it('restores a draft that started before midnight', () => {
+    expect(parseDraft(JSON.stringify(draft), now)).toEqual(draft)
+  })
+
+  it('discards a draft older than the max age', () => {
+    const stale = { ...draft, startedAt: now - DRAFT_MAX_AGE_MS }
+    expect(parseDraft(JSON.stringify(stale), now)).toBeNull()
+  })
+
+  it('discards drafts saved in the old date-keyed format', () => {
+    const legacy = JSON.stringify(createEntries(workout.exercises))
+    expect(parseDraft(legacy, now)).toBeNull()
+  })
+
+  it('sanitizes restored values', () => {
+    const dirty = {
+      ...draft,
+      exercises: [
+        { name: 'Bench Press', sets: [{ reps: '8x', weight: '1,5', notes: 3 }] }
+      ]
+    }
+    expect(parseDraft(JSON.stringify(dirty), now)?.exercises[0].sets).toEqual([
+      { reps: '8', weight: '1.5', notes: '3' }
+    ])
+  })
+
+  it('matches saved sets to exercises by name after the program changes', () => {
+    const edited = [
+      { name: 'Pull Up', sets: 1, reps: 10 },
+      { name: 'Dip', sets: 3, reps: 12 },
+      { name: 'bench press', sets: 4, reps: 8 }
+    ]
+    const entries = restoreEntries(edited, draft.exercises)
+    expect(entries[0]).toEqual(draft.exercises[1].sets)
+    expect(entries[1]).toEqual(createEntries([edited[1]])[0])
+    expect(entries[2]).toEqual(draft.exercises[0].sets)
+  })
+
+  it('gives repeated exercises their own saved sets in order', () => {
+    const repeated = [
+      { name: 'Pull Up', sets: 1, reps: 10 },
+      { name: 'Pull Up', sets: 1, reps: 10 }
+    ]
+    const saved = [
+      { name: 'Pull Up', sets: [{ reps: '10', weight: '', notes: '' }] },
+      { name: 'Pull Up', sets: [{ reps: '7', weight: '', notes: '' }] }
+    ]
+    const entries = restoreEntries(repeated, saved)
+    expect(entries.map((sets) => sets[0].reps)).toEqual(['10', '7'])
+  })
+
+  describe('pruneDrafts', () => {
+    beforeEach(() => localStorage.clear())
+
+    it('removes expired and legacy drafts and keeps fresh ones', () => {
+      const freshKey = workoutDraftKey('p1', 'Monday')
+      const staleKey = workoutDraftKey('p1', 'Tuesday')
+      const legacyKey = `${workoutDraftKey('p1', 'Monday')}:2026-10-16`
+      localStorage.setItem(freshKey, JSON.stringify(draft))
+      localStorage.setItem(
+        staleKey,
+        JSON.stringify({ ...draft, startedAt: now - DRAFT_MAX_AGE_MS - 1 })
+      )
+      localStorage.setItem(legacyKey, '[[{"reps":"9"}]]')
+      localStorage.setItem('ironwise:weight-unit', 'kg')
+
+      pruneDrafts(localStorage, now)
+
+      expect(localStorage.getItem(freshKey)).not.toBeNull()
+      expect(localStorage.getItem(staleKey)).toBeNull()
+      expect(localStorage.getItem(legacyKey)).toBeNull()
+      expect(localStorage.getItem('ironwise:weight-unit')).toBe('kg')
     })
   })
 })

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
 import { Exercise, Workout } from '@/types/programCreation'
 import {
   SetEntry,
@@ -197,31 +197,110 @@ const writeStorage = (key: string, value: string | null) => {
   }
 }
 
-const loadDraft = (key: string, exercises: Exercise[]): SetEntry[][] | null => {
-  const raw = readStorage(key)
+const DRAFT_PREFIX = 'ironwise:workout:'
+export const DRAFT_MAX_AGE_MS = 18 * 60 * 60 * 1000
+
+interface DraftExercise {
+  name: string
+  sets: SetEntry[]
+}
+
+export interface WorkoutDraft {
+  startedAt: number
+  performedOn: string
+  exercises: DraftExercise[]
+}
+
+export const workoutDraftKey = (programId: string, day: string): string =>
+  `${DRAFT_PREFIX}${programId}:${day}`
+
+const toSetEntry = (entry: Partial<SetEntry> | null | undefined): SetEntry => ({
+  reps: sanitizeReps(String(entry?.reps ?? '')),
+  weight: sanitizeWeight(String(entry?.weight ?? '')),
+  notes: String(entry?.notes ?? '').slice(0, 280)
+})
+
+const hasInput = (entries: SetEntry[][]): boolean =>
+  entries.some((sets) =>
+    sets.some((entry) => entry.reps || entry.weight || entry.notes.trim())
+  )
+
+export const parseDraft = (
+  raw: string | null,
+  now: number
+): WorkoutDraft | null => {
   if (!raw) return null
   try {
-    const parsed = JSON.parse(raw) as SetEntry[][]
-    // Set counts can differ from the program once sets are added or removed
-    const matches =
-      Array.isArray(parsed) &&
-      parsed.length === exercises.length &&
-      parsed.every(
-        (sets) =>
-          Array.isArray(sets) &&
-          sets.length >= MIN_SETS &&
-          sets.length <= MAX_SETS
-      )
-    if (!matches) return null
-    return parsed.map((sets) =>
-      sets.map((entry) => ({
-        reps: sanitizeReps(String(entry?.reps ?? '')),
-        weight: sanitizeWeight(String(entry?.weight ?? '')),
-        notes: String(entry?.notes ?? '').slice(0, 280)
-      }))
+    const parsed = JSON.parse(raw) as Partial<WorkoutDraft> | null
+    const startedAt = parsed?.startedAt
+    const performedOn = parsed?.performedOn
+    if (
+      typeof startedAt !== 'number' ||
+      Math.abs(now - startedAt) >= DRAFT_MAX_AGE_MS ||
+      typeof performedOn !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(performedOn) ||
+      !Array.isArray(parsed?.exercises)
     )
+      return null
+    const exercises = parsed.exercises
+      .filter(
+        (exercise) =>
+          typeof exercise?.name === 'string' &&
+          Array.isArray(exercise.sets) &&
+          exercise.sets.length >= MIN_SETS &&
+          exercise.sets.length <= MAX_SETS
+      )
+      .map((exercise) => ({
+        name: exercise.name,
+        sets: exercise.sets.map(toSetEntry)
+      }))
+    return { startedAt, performedOn, exercises }
   } catch {
     return null
+  }
+}
+
+const sameExercise = (a: string, b: string) =>
+  a.trim().toLowerCase() === b.trim().toLowerCase()
+
+export const restoreEntries = (
+  exercises: Exercise[],
+  draft: DraftExercise[]
+): SetEntry[][] => {
+  const unclaimed = [...draft]
+  return exercises.map((exercise) => {
+    const match = unclaimed.findIndex((saved) =>
+      sameExercise(saved.name, exercise.name)
+    )
+    if (match === -1) return createEntries([exercise])[0]
+    return unclaimed.splice(match, 1)[0].sets
+  })
+}
+
+export const pruneDrafts = (storage: Storage, now: number) => {
+  const keys = Array.from({ length: storage.length }, (_, index) =>
+    storage.key(index)
+  )
+  keys.forEach((key) => {
+    if (key?.startsWith(DRAFT_PREFIX) && !parseDraft(storage.getItem(key), now))
+      storage.removeItem(key)
+  })
+}
+
+const loadSession = (key: string, exercises: Exercise[]) => {
+  const now = Date.now()
+  try {
+    pruneDrafts(window.localStorage, now)
+  } catch {
+    // Pruning is housekeeping; a failure only leaves stale drafts behind
+  }
+  const draft = parseDraft(readStorage(key), now)
+  return {
+    startedAt: draft?.startedAt ?? now,
+    performedOn: draft?.performedOn ?? localDateString(new Date(now)),
+    entries: draft
+      ? restoreEntries(exercises, draft.exercises)
+      : createEntries(exercises)
   }
 }
 
@@ -234,23 +313,34 @@ export const useWorkoutSession = ({
   programId,
   workout
 }: UseWorkoutSessionArgs) => {
-  const performedOn = useMemo(() => localDateString(), [])
-  const draftKey = `ironwise:workout:${programId}:${workout.day}:${performedOn}`
+  const draftKey = workoutDraftKey(programId, workout.day)
+  const [session] = useState(() => loadSession(draftKey, workout.exercises))
+  const { startedAt, performedOn } = session
 
   const [state, dispatch] = useReducer(
     sessionReducer,
     undefined,
     (): SessionState => ({
-      entries:
-        loadDraft(draftKey, workout.exercises) ??
-        createEntries(workout.exercises),
+      entries: session.entries,
       unit: readStorage(UNIT_KEY) === 'kg' ? 'kg' : 'lb'
     })
   )
 
   useEffect(() => {
-    writeStorage(draftKey, JSON.stringify(state.entries))
-  }, [draftKey, state.entries])
+    if (!hasInput(state.entries)) {
+      writeStorage(draftKey, null)
+      return
+    }
+    const draft: WorkoutDraft = {
+      startedAt,
+      performedOn,
+      exercises: workout.exercises.map((exercise, index) => ({
+        name: exercise.name,
+        sets: state.entries[index]
+      }))
+    }
+    writeStorage(draftKey, JSON.stringify(draft))
+  }, [draftKey, startedAt, performedOn, workout.exercises, state.entries])
 
   useEffect(() => {
     writeStorage(UNIT_KEY, state.unit)
