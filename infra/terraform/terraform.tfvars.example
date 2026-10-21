@@ -1,0 +1,4 @@
+aws_region                 = "us-east-1"
+aws_profile                = "ironwise"
+visibility_timeout_seconds = 120
+max_receive_count          = 3
