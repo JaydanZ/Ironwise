@@ -1,3 +1,18 @@
+x-backend-environment: &backend-environment
+  - CLIENT_URL=${CLIENT_URL}
+  - REDIS_HOST=${REDIS_HOST}
+  - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+  - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+  - SUPABASE_URL=${SUPABASE_URL}
+  - SUPABASE_KEY=${SUPABASE_KEY}
+  - OPENAI_API_KEY=${OPENAI_API_KEY}
+  - AWS_REGION=us-east-1
+  - PROGRAM_QUEUE_URL=http://elasticmq:9324/000000000000/program-generation
+  - SQS_ENDPOINT_URL=http://elasticmq:9324
+  # ElasticMQ accepts any credentials, but boto3 refuses to sign requests without some
+  - AWS_ACCESS_KEY_ID=local
+  - AWS_SECRET_ACCESS_KEY=local
+
 services:
   ironwise-frontend:
     build:
@@ -11,18 +26,31 @@ services:
       - "5173:5173"
   ironwise-backend:
     build: ./backend
-    environment:
-      - CLIENT_URL=${CLIENT_URL}
-      - REDIS_HOST=${REDIS_HOST}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_KEY=${SUPABASE_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    environment: *backend-environment
+    depends_on:
+      - elasticmq
     networks:
       - ironwise
     ports:
       - "8000:8000"
+  ironwise-worker:
+    build: ./backend
+    # The image copies backend/ into /app, so the package is importable as "app" from /
+    working_dir: /
+    command: ["python", "-m", "app.worker"]
+    environment: *backend-environment
+    depends_on:
+      - elasticmq
+    networks:
+      - ironwise
+  elasticmq:
+    image: softwaremill/elasticmq-native:1.7.1
+    volumes:
+      - ./infra/elasticmq/elasticmq.conf:/opt/elasticmq.conf:ro
+    networks:
+      - ironwise
+    ports:
+      - "9324:9324"
 
 networks:
   ironwise:

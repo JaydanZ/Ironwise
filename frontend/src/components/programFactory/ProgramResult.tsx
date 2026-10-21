@@ -8,11 +8,12 @@ import {
 } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import clsx from 'clsx'
-import { useSelector, useDispatch } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { clearProgram } from '@/features/programGeneration/programGenerationSlice'
-import { RootState } from '@/store/store'
+import { RootState, useAsyncDispatch } from '@/store/store'
 import { ProgramStruct, Workout } from '@/types/programCreation'
 import { programImport } from '@/services/programsAPI'
+import { discardProgramJob } from '@/services/programGenAPI'
 import { protectedApiSlice } from '@/services/protectedRoutesAPI'
 
 import { ArrowLeft, ArrowRight, Check, Plus } from 'lucide-react'
@@ -59,10 +60,13 @@ const isWeekdayProgram = (workouts: Workout[]) => {
 }
 
 export const ProgramResult = () => {
-  const dispatch = useDispatch()
+  const dispatch = useAsyncDispatch()
   const navigate = useNavigate()
   const programData = useSelector(
     (state: RootState) => state.programGeneration.aiProgram
+  )
+  const jobId = useSelector(
+    (state: RootState) => state.programGeneration.jobId
   )
   const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn)
 
@@ -174,6 +178,8 @@ export const ProgramResult = () => {
       await programImport(program)
       // Training reads saved programs from the cached profile query
       dispatch(protectedApiSlice.util.invalidateTags(['Profile']))
+      // The program stays on screen; it just won't come back after a refresh once it's saved
+      discardProgramJob(jobId)
       setSaveStatus('saved')
     } catch (error) {
       console.error(error)

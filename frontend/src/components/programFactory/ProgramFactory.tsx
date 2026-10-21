@@ -6,8 +6,8 @@ import { useAsyncDispatch } from '@/store/store'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import {
-  getAIProgram,
-  ProgramGenerationError
+  isProgramJobError,
+  startAIProgram
 } from '@/features/programGeneration/programGenerationSlice'
 import { toast } from '@/hooks/use-toast'
 import { ProgramOptions } from '@/types/programCreation'
@@ -169,15 +169,16 @@ export const ProgramFactory = () => {
       }
 
       try {
-        const result = await dispatch(getAIProgram(programInput))
+        const result = await dispatch(startAIProgram(programInput))
         if (
-          getAIProgram.rejected.match(result) &&
-          (result.payload as ProgramGenerationError | undefined)?.errorCode !==
-            429
+          startAIProgram.rejected.match(result) &&
+          result.payload?.errorCode !== 429
         ) {
           toast({
             variant: 'error',
-            title: 'We couldn’t generate your program',
+            title: isProgramJobError(result.payload)
+              ? 'We couldn’t finish your program'
+              : 'We couldn’t generate your program',
             description: 'Try again in a moment.'
           })
         }
