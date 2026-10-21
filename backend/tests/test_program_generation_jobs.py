@@ -44,6 +44,7 @@ GENERATED_PROGRAM = ProgramResult(
 class JobsTestClient(TestClient):
     sqs: object
     queue_url: str
+    dlq_url: str
 
 
 def auth_header(user_id):
@@ -62,14 +63,19 @@ def redis(monkeypatch):
 def client(monkeypatch, redis):
     with mock_aws():
         sqs = boto3.client("sqs", region_name="us-east-1")
+        dlq_url = sqs.create_queue(QueueName="program-generation-dlq")["QueueUrl"]
+        dlq_arn = sqs.get_queue_attributes(QueueUrl=dlq_url, AttributeNames=["QueueArn"])["Attributes"]["QueueArn"]
         # 0 s visibility so an unacked message is redelivered on the very next receive
-        queue_url = sqs.create_queue(QueueName="program-generation", Attributes={"VisibilityTimeout": "0"})["QueueUrl"]
+        queue_url = sqs.create_queue(QueueName="program-generation", Attributes={
+            "VisibilityTimeout": "0",
+            "RedrivePolicy": json.dumps({"deadLetterTargetArn": dlq_arn, "maxReceiveCount": str(worker.MAX_ATTEMPTS)}),
+        })["QueueUrl"]
         programQueue._client.cache_clear()
         monkeypatch.setattr(programQueue, "RECEIVE_WAIT_SECONDS", 0)
         limiter.reset()
 
         test_client = JobsTestClient(app)
-        test_client.sqs, test_client.queue_url = sqs, queue_url
+        test_client.sqs, test_client.queue_url, test_client.dlq_url = sqs, queue_url, dlq_url
         yield test_client
     programQueue._client.cache_clear()
 
@@ -91,9 +97,9 @@ def generator(monkeypatch):
     return fake_generate
 
 
-def queued_messages(client):
+def queued_messages(client, queue_url=None):
     attributes = client.sqs.get_queue_attributes(
-        QueueUrl=client.queue_url,
+        QueueUrl=queue_url or client.queue_url,
         AttributeNames=["ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible"],
     )["Attributes"]
     return int(attributes["ApproximateNumberOfMessages"]) + int(attributes["ApproximateNumberOfMessagesNotVisible"])
@@ -230,7 +236,7 @@ def test_worker_leaves_the_message_for_redelivery_on_early_failures(client, gene
     assert queued_messages(client) == 1
 
 
-def test_worker_fails_the_job_on_the_last_attempt(client, generator):
+def test_worker_fails_the_job_on_the_last_attempt_and_the_message_is_dead_lettered(client, generator):
     job_id = start_job(client)
     generator.outcomes.extend([RuntimeError("LLM timeout")] * worker.MAX_ATTEMPTS)
 
@@ -238,7 +244,11 @@ def test_worker_fails_the_job_on_the_last_attempt(client, generator):
         worker.process_next()
 
     assert job_status(client, job_id).json() == {"status": "failed"}
+    # The next receive is where SQS's redrive policy moves it, instead of delivering it again
+    worker.process_next()
+    assert len(generator.calls) == worker.MAX_ATTEMPTS
     assert queued_messages(client) == 0
+    assert queued_messages(client, client.dlq_url) == 1
 
 
 def test_worker_recovers_when_a_retry_succeeds(client, generator):

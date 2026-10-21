@@ -35,10 +35,10 @@ def process_next() -> None:
         program = generate_program(ProgramOptions(**job.options))
     except Exception:
         logger.exception("Generating job %s failed (attempt %d)", job.job_id, job.receive_count)
+        # The user hears now; the message stays unacked so the redrive policy dead-letters it for inspection
         if job.receive_count >= MAX_ATTEMPTS:
             programJobs.fail_job(job.job_id)
-            programQueue.ack(job)
-        # Otherwise the message stays unacked and SQS redelivers it after the visibility timeout
+        # Before the last attempt, SQS redelivers the unacked message after the visibility timeout
         return
 
     programJobs.complete_job(job.job_id, program.model_dump())

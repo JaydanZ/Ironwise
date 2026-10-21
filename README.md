@@ -16,6 +16,8 @@ The project is still in active development.
 - Five-question form that sends your answers to an OpenAI model through LangChain.
 - The model's output is parsed straight into a Pydantic schema, so a program either matches the rules (valid weekday names, each day used once, limits on name lengths and exercises per day) or it gets rejected. Invalid output is retried once before the request fails.
 - Recovery is built into the prompt: workouts land on weekdays when you train fewer than six days, with rest spread through the week.
+- Generation runs as a background job on Amazon SQS, so a refresh, a closed tab or a server restart mid-generation doesn't lose your program. Come back to the page and it picks up where it left off.
+- When you're logged in, a program you generated on one device is waiting on the others.
 - Generated programs can be saved straight to your account.
 
 ### Building and editing programs
@@ -74,15 +76,31 @@ The project is still in active development.
 - **Pydantic** and **pydantic-settings** for request/response models and config
 - **LangChain** with the **OpenAI** API for program generation
 - **Supabase** (PostgreSQL) for data, with SQL migrations, declarative schemas, views and Postgres functions
-- **Redis** for refresh tokens, login lockouts and password reset state
+- **Redis** for refresh tokens, login lockouts, password reset state and program generation jobs
+- **Amazon SQS** (through **boto3**) as the queue for program generation, consumed by a separate background worker process
 - **PyJWT** for tokens, **argon2-cffi** (and **bcrypt** for legacy hashes) for passwords
 - **SlowAPI** for rate limiting
 - **Resend** for transactional email
 - **HTTPX** for the Have I Been Pwned check
-- **pytest** with **fakeredis** for tests
+- **pytest** with **fakeredis** and **moto** for tests
 
 ### Infrastructure
 
-- **Docker** and **Docker Compose** for running the frontend and backend together
+- **Docker** and **Docker Compose** for running the frontend, backend and worker together, with **ElasticMQ** standing in for SQS locally
+- **Terraform** for the AWS resources: the SQS queue, its dead-letter queue, and the IAM users the API and worker sign in as
 - **Nginx** as a reverse proxy with request rate limiting
 - **GitHub Actions** workflow that pushes database migrations to Supabase whenever a migration lands on `main`
+
+## AWS infrastructure
+
+The SQS queues and IAM users are defined in [`infra/terraform/`](infra/terraform/). Change them only there, never in the AWS console, or Terraform's state drifts from what's deployed.
+
+```
+cd infra/terraform
+terraform init
+terraform plan      # read what will change before applying
+terraform apply
+terraform output program_queue_url
+```
+
+Terraform signs in with the `ironwise` AWS CLI profile. The access keys the API and worker use are created by hand in the IAM console, so their secrets never end up in Terraform state. The local queue config in [`infra/elasticmq/elasticmq.conf`](infra/elasticmq/elasticmq.conf) mirrors `sqs.tf` and has to be kept in step with it.
