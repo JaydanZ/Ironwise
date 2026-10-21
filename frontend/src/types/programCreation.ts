@@ -37,6 +37,15 @@ export interface ProgranGenResult {
   program_tips_and_goals: string[] | null
 }
 
+export interface ProgramJob {
+  status: 'pending' | 'done' | 'failed'
+  program?: ProgranGenResult
+}
+
+export interface LatestProgramJob extends ProgramJob {
+  job_id: string
+}
+
 export interface WorkoutProgram {
   created_at: string
   description: string | null
