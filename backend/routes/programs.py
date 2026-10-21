@@ -2,9 +2,10 @@ import logging
 import ast
 from typing import Annotated
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, Depends, Query, Request
+from fastapi import APIRouter, HTTPException, Depends, Path, Query, Request
 from ..models.programGeneration import ProgramOptions
-from ..utils.programGenerator import generate_program, ProgramGenerationError
+from ..utils.programJobs import create_job, get_job, latest_job, delete_job
+from ..utils.programQueue import enqueue, QueueError
 from ..models.programs import ProgramImport
 from ..models.programRules import (
     PROGRAM_SAVE_RATE_LIMIT,
@@ -105,18 +106,53 @@ async def update_program_route(
         "program_id": str(program_id)
     }
 
-@programs_router.post('/generate', status_code=201)
+def _optional_user_id(request: Request) -> str | None:
+    return getattr(request.state, "current_user_id", None)
+
+def _job_response(job: dict) -> dict:
+    response = {"status": job["status"]}
+    if "program" in job:
+        response["program"] = job["program"]
+    return response
+
+@programs_router.post('/generate', status_code=202)
 @limiter.limit("5/minute")
 def handleProgramGeneration(request: Request, programInput: ProgramOptions):
     ## Check if free limit is enabled -> means user is not logged in
     if(programInput.freeLimitEnabled == True):
         raise HTTPException(status_code=401, detail="User must login to continue using API")
-    try:
-        content = generate_program(programInput)
-    except ProgramGenerationError:
-        logger.exception("Program generation failed after retrying")
-        raise HTTPException(status_code=502, detail="Couldn't generate a valid program")
-    return content
+
+    user_id = _optional_user_id(request)
+    job_id, is_new = create_job(user_id)
+    if is_new:
+        try:
+            enqueue(job_id, programInput.model_dump())
+        except QueueError:
+            logger.exception("Couldn't enqueue program generation job")
+            delete_job(job_id, user_id)
+            raise HTTPException(status_code=503, detail="Program generation is unavailable, try again shortly")
+    return {"job_id": job_id}
+
+## Declared before /generate/{job_id} so "latest" isn't read as a job ID
+@programs_router.get('/generate/latest', status_code=200)
+def get_latest_program_job_route(user_id: str = Depends(get_current_user)):
+    latest = latest_job(user_id)
+    if latest is None:
+        raise HTTPException(status_code=404, detail="No program generation job")
+    job_id, job = latest
+    return {"job_id": job_id, **_job_response(job)}
+
+@programs_router.get('/generate/{job_id}', status_code=200)
+@limiter.limit("60/minute")
+def get_program_job_route(request: Request, job_id: Annotated[str, Path(max_length=64)]):
+    job = get_job(job_id, _optional_user_id(request))
+    if job is None:
+        raise HTTPException(status_code=404, detail="Program generation job not found")
+    return _job_response(job)
+
+@programs_router.delete('/generate/{job_id}', status_code=204)
+def delete_program_job_route(request: Request, job_id: Annotated[str, Path(max_length=64)]):
+    delete_job(job_id, _optional_user_id(request))
 
 @programs_router.post('/import', status_code=201)
 @limiter.limit(PROGRAM_SAVE_RATE_LIMIT, key_func=user_and_ip_key)

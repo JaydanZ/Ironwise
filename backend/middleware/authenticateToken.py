@@ -2,7 +2,7 @@ import jwt
 from fastapi import Request, status, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response, JSONResponse
-from ..config import non_auth_routes
+from ..config import non_auth_routes, optional_auth_route_prefixes
 from ..config import get_settings
 
 ## Setup env vars
@@ -15,6 +15,9 @@ def handleTokenError(detail: str):
                 content={"detail": detail},
                 status_code=status.HTTP_401_UNAUTHORIZED
             )
+
+def is_optional_auth_route(path: str) -> bool:
+    return any(path == prefix or path.startswith(f"{prefix}/") for prefix in optional_auth_route_prefixes)
 
 class TokenAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
@@ -30,6 +33,8 @@ class TokenAuthMiddleware(BaseHTTPMiddleware):
         access_token = request.headers.get("authorization")
 
         if not access_token or not access_token.startswith("Bearer "):
+            if is_optional_auth_route(request.url.path):
+                return await call_next(request)
             return handleTokenError("Authentication Required")
     
         token = access_token.split(" ")[1]

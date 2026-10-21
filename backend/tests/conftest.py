@@ -14,6 +14,12 @@ TEST_ENV = {
     "OPENAI_API_KEY": "sk-test",
     "RESEND_API_KEY": "re_test",
     "EMAIL_FROM": "Ironwise <test@example.com>",
+    "AWS_REGION": "us-east-1",
+    # Empty, not absent: backend/.env would otherwise point tests at a running ElasticMQ
+    "SQS_ENDPOINT_URL": "",
+    "PROGRAM_QUEUE_URL": "https://sqs.us-east-1.amazonaws.com/123456789012/program-generation",
+    "AWS_ACCESS_KEY_ID": "testing",
+    "AWS_SECRET_ACCESS_KEY": "testing",
 }
 for name, value in TEST_ENV.items():
     os.environ[name] = value

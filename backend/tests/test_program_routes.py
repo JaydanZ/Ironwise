@@ -5,7 +5,6 @@ from fastapi.testclient import TestClient
 from backend.main import app
 from backend.routes import programs as programs_routes
 from backend.utils.limiter import limiter
-from backend.utils.programGenerator import ProgramGenerationError
 
 PROGRAM_ID = "6f1c2c1e-8d0a-4c6b-9a43-2f7d5c1b9e10"
 
@@ -81,25 +80,3 @@ def test_limits_each_user_to_one_save_every_five_seconds(client, save):
     # A different user on the same network has their own limit
     assert save(client, VALID_PROGRAM, user_id="user-2").status_code in (200, 201)
     assert len(client.saved) == 2
-
-
-def test_generation_failure_returns_502(client, monkeypatch):
-    def failing_generator(program_input):
-        raise ProgramGenerationError("invalid output")
-
-    monkeypatch.setattr(programs_routes, "generate_program", failing_generator)
-
-    response = client.post("/api/v1/programs/generate", json={
-        "fitness_goal": "Strength",
-        "years_of_experience": "1-2",
-        "days_per_week": "3",
-        "age": 25,
-        "weight": 180,
-        "weight_unit": "lb",
-        "gender": "Male",
-        "isLoggedIn": True,
-        "freeLimitEnabled": False,
-    })
-
-    assert response.status_code == 502
-    assert response.json()["detail"] == "Couldn't generate a valid program"
