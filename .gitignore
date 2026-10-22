@@ -7,3 +7,6 @@ Modelfile.txt
 *.tfstate
 *.tfstate.*
 terraform.tfvars
+
+# Redis snapshots from a local server
+dump.rdb
