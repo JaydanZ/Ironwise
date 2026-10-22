@@ -8,6 +8,11 @@ Still in active development.
 
 ## Features
 
+### Landing page
+
+- Animated hero: a WebGL dot field in lime, aqua, purple and deep blue that shimmers, reacts to the cursor and pauses when offscreen. Falls back to a static pattern without WebGL, and holds still with reduced motion.
+- Coded previews of the Home and Training screens, plus working demos of set logging and the strength trend chart (sample data).
+
 ### AI program generation
 
 - OpenAI model via LangChain, with output parsed into a strict Pydantic schema and retried once if invalid.
@@ -48,7 +53,7 @@ Still in active development.
 
 ## Tech stack
 
-**Frontend:** React 19, Vite, TypeScript, TanStack Router, TanStack Form, Redux Toolkit / RTK Query, Axios, Tailwind CSS, shadcn/ui (Radix UI), Motion, Lucide, React Icons, Vitest, Testing Library, happy-dom, ESLint, Prettier, pnpm
+**Frontend:** React 19, Vite, TypeScript, WebGL, TanStack Router, TanStack Form, Redux Toolkit / RTK Query, Axios, Tailwind CSS, shadcn/ui (Radix UI), Motion, Lucide, React Icons, Vitest, Testing Library, happy-dom, ESLint, Prettier, pnpm
 
 **Backend:** Python, FastAPI, Uvicorn, Pydantic, LangChain, OpenAI, Supabase (PostgreSQL), Redis, Amazon SQS (boto3), PyJWT, argon2-cffi, bcrypt, SlowAPI, Resend, HTTPX, pytest, fakeredis, moto
 

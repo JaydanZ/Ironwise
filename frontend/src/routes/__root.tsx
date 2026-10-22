@@ -5,7 +5,7 @@ import {
   useRouterState
 } from '@tanstack/react-router'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 
@@ -111,7 +111,22 @@ function MobileNav({ routes }: MobileNavProps) {
   )
 }
 
+const useIsScrolled = (enabled: boolean) => {
+  const [isScrolled, setIsScrolled] = useState(false)
+  useEffect(() => {
+    if (!enabled) return
+    const update = () => setIsScrolled(window.scrollY > 24)
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+    return () => window.removeEventListener('scroll', update)
+  }, [enabled])
+  return isScrolled
+}
+
 function RootComponent() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const isLanding = pathname === '/'
+  const isScrolled = useIsScrolled(isLanding)
   const authStatus = useSelector((state: RootState) => state.auth.userToken)
   const isMobile = useIsMobile()
   const navRoutes = authStatus ? LOGGED_IN_ROUTES : LOGGED_OUT_ROUTES
@@ -125,7 +140,17 @@ function RootComponent() {
       {isMobile ? (
         <MobileNav routes={navRoutes} />
       ) : (
-        <nav className="flex flex-nowrap fixed top-0 z-50 w-full [view-transition-name:site-nav] items-center justify-between bg-app-colors-500 py-6">
+        <nav
+          className={clsx(
+            'flex flex-nowrap fixed top-0 z-50 w-full [view-transition-name:site-nav] items-center justify-between py-6 transition-[background-color,backdrop-filter] duration-300',
+            // Over the landing hero the nav sits on the animated field until you scroll
+            isLanding && !isScrolled
+              ? 'bg-transparent'
+              : isLanding
+                ? 'bg-app-colors-500/80 backdrop-blur-xl'
+                : 'bg-app-colors-500'
+          )}
+        >
           {/* DESKTOP VIEW */}
           {/* Left elements */}
           <ul className="flex flex-row list-style-none me-auto pl-12">

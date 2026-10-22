@@ -254,3 +254,100 @@ html:active-view-transition-type(slide-right)::view-transition-new(root) {
     -moz-appearance: textfield;
   }
 }
+
+.hero-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.06em;
+}
+.hero-line > span {
+  display: block;
+  /* The fade runs on its own gentler curve; under the rise's strong ease it finished before the line cleared the clip */
+  animation:
+    line-rise 1100ms cubic-bezier(0.23, 1, 0.32, 1) backwards,
+    line-fade 1000ms cubic-bezier(0.4, 0, 0.6, 1) backwards;
+  animation-delay: calc(250ms + var(--i, 0) * 110ms);
+}
+.hero-fade {
+  animation: hero-blur-in 900ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(450ms + var(--i, 0) * 90ms);
+}
+
+@keyframes line-rise {
+  from {
+    transform: translateY(105%);
+  }
+}
+@keyframes line-fade {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+@keyframes hero-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(6px);
+  }
+}
+
+/* The home screen mockup scrolls like someone is checking it, then settles back */
+.phone-scroll {
+  animation: phone-scroll 18s cubic-bezier(0.65, 0, 0.35, 1) 2.4s infinite;
+}
+/* Starts halfway through the Home phone's cycle so the two never scroll together */
+.phone-scroll-late {
+  --scroll-distance: -470px;
+  animation-delay: 11.4s;
+}
+@keyframes phone-scroll {
+  0%,
+  28% {
+    transform: translateY(0);
+  }
+  42%,
+  72% {
+    transform: translateY(var(--scroll-distance, -238px));
+  }
+  86%,
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.trend-draw {
+  stroke-dasharray: 1;
+  animation: trend-draw 900ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+}
+@keyframes trend-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+.signal-field-fallback {
+  background-image:
+    radial-gradient(circle, rgb(148 234 67 / 0.5) 1px, transparent 1.5px),
+    radial-gradient(60% 50% at 75% 45%, rgb(63 230 214 / 0.18), transparent),
+    radial-gradient(50% 60% at 30% 70%, rgb(155 107 255 / 0.16), transparent),
+    radial-gradient(70% 70% at 60% 30%, rgb(35 60 188 / 0.3), transparent);
+  background-size:
+    7px 7px,
+    100% 100%,
+    100% 100%,
+    100% 100%;
+  -webkit-mask-image: radial-gradient(70% 70% at 70% 50%, #000, transparent);
+  mask-image: radial-gradient(70% 70% at 70% 50%, #000, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-line > span,
+  .phone-scroll,
+  .trend-draw {
+    animation: none;
+  }
+  .hero-fade {
+    animation: fade-in 200ms ease-out backwards;
+  }
+}
