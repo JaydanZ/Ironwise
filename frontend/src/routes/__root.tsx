@@ -111,6 +111,8 @@ function MobileNav({ routes }: MobileNavProps) {
   )
 }
 
+const FIELD_HERO_ROUTES = ['/', '/login', '/registerUser']
+
 const useIsScrolled = (enabled: boolean) => {
   const [isScrolled, setIsScrolled] = useState(false)
   useEffect(() => {
@@ -125,8 +127,8 @@ const useIsScrolled = (enabled: boolean) => {
 
 function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const isLanding = pathname === '/'
-  const isScrolled = useIsScrolled(isLanding)
+  const hasFieldHero = FIELD_HERO_ROUTES.includes(pathname)
+  const isScrolled = useIsScrolled(hasFieldHero)
   const authStatus = useSelector((state: RootState) => state.auth.userToken)
   const isMobile = useIsMobile()
   const navRoutes = authStatus ? LOGGED_IN_ROUTES : LOGGED_OUT_ROUTES
@@ -143,10 +145,9 @@ function RootComponent() {
         <nav
           className={clsx(
             'flex flex-nowrap fixed top-0 z-50 w-full [view-transition-name:site-nav] items-center justify-between py-6 transition-[background-color,backdrop-filter] duration-300',
-            // Over the landing hero the nav sits on the animated field until you scroll
-            isLanding && !isScrolled
+            hasFieldHero && !isScrolled
               ? 'bg-transparent'
-              : isLanding
+              : hasFieldHero
                 ? 'bg-app-colors-500/80 backdrop-blur-xl'
                 : 'bg-app-colors-500'
           )}
