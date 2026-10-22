@@ -47,6 +47,9 @@ const PROGRAM: ProgranGenResult = {
 
 const OPTIONS: ProgramOptions = {
   fitness_goal: 'Gain muscle',
+  training_style: 'Weightlifting',
+  workout_location: 'Gym',
+  home_equipment: [],
   years_of_experience: '0 - 1 Years',
   days_per_week: '3 Days',
   age: 25,

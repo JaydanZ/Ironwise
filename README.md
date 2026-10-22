@@ -17,6 +17,7 @@ Still in active development.
 
 - OpenAI model via LangChain, with output parsed into a strict Pydantic schema and retried once if invalid.
 - Spreads rest days through the week when you train fewer than six days.
+- Choose weightlifting, calisthenics or a hybrid of both, and a gym or home workout. For home workouts, pick the equipment you own and the program only uses exercises it allows.
 - Runs as a background job on Amazon SQS, so refreshes, closed tabs or server restarts don't lose your program.
 - Logged-in users see in-progress programs across devices and can save them to their account.
 

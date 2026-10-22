@@ -34,7 +34,7 @@ class ProgramGenerationError(Exception):
 
 ## Prompt Template
 PROGRAM_GENERATION_PROMPT_TEMPLATE = f"""
-    You're a fitness trainer with over 10 years of experience with weightlifting, bodybuilding, strength training and
+    You're a fitness trainer with over 10 years of experience with weightlifting, calisthenics, bodybuilding, strength training and
     assiting other people to achieve their fitness goals. Your objective is to generate a workout program for the user
     following these arguments provided by the user:
     Only schedule workouts on weekdays (If days_per_week is less than 6),
@@ -42,7 +42,12 @@ PROGRAM_GENERATION_PROMPT_TEMPLATE = f"""
     Schedule each day at most once, using only these day names: {", ".join(WEEKDAYS)}
     Keep the program name under {MAX_PROGRAM_NAME_LENGTH} characters, each focus under {MAX_FOCUS_LENGTH} characters,
     each exercise name under {MAX_EXERCISE_NAME_LENGTH} characters, and at most {MAX_EXERCISES_PER_DAY} exercises per day
+    Only use exercises the user's available equipment allows
+    For calisthenics, build the program around bodyweight movements and their progressions; for hybrid, mix bodyweight and weighted exercises
     User's fitness goal: {{fitness_goal}}
+    User's training style: {{training_style}}
+    User's workout location: {{workout_location}}
+    User's available equipment: {{equipment}}
     User's years of experience working out: {{years_of_experience}}
     User's availability to workout during the week: {{days_per_week}}
     User's current age: {{age}}
@@ -61,15 +66,22 @@ def invoke_with_retry(chain, inputs: dict):
             last_error = error
     raise ProgramGenerationError("Generated program failed validation") from last_error
 
-def generate_program(program: ProgramOptions):
-    prompt = PromptTemplate(
+def program_prompt():
+    return PromptTemplate(
         template=PROGRAM_GENERATION_PROMPT_TEMPLATE,
-        input_variables=["fitness_goal","years_of_experience","days_per_week","age","weight","weight_unit","gender"],
+        input_variables=["fitness_goal","training_style","workout_location","equipment","years_of_experience",
+                         "days_per_week","age","weight","weight_unit","gender"],
         partial_variables={"format_instructions": parser.get_format_instructions()}
     )
 
-    chain = prompt | llm | parser
+def prompt_inputs(program: ProgramOptions):
+    equipment = (", ".join(program.home_equipment) or "None (bodyweight only)") if program.workout_location == "Home" else "A full gym"
+    return {"fitness_goal":program.fitness_goal, "training_style": program.training_style,
+            "workout_location": program.workout_location, "equipment": equipment,
+            "years_of_experience": program.years_of_experience, "days_per_week": program.days_per_week,
+            "age":program.age, "weight":program.weight, "weight_unit":program.weight_unit, "gender": program.gender}
 
-    return invoke_with_retry(chain, {"fitness_goal":program.fitness_goal, "years_of_experience": program.years_of_experience,
-                           "days_per_week": program.days_per_week, "age":program.age, "weight":program.weight,
-                           "weight_unit":program.weight_unit, "gender": program.gender})
+def generate_program(program: ProgramOptions):
+    chain = program_prompt() | llm | parser
+
+    return invoke_with_retry(chain, prompt_inputs(program))

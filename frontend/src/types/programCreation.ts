@@ -1,5 +1,8 @@
 export interface ProgramOptions {
   fitness_goal: string
+  training_style: string
+  workout_location: string
+  home_equipment: string[]
   years_of_experience: string
   days_per_week: string
   age: number
