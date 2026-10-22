@@ -4,6 +4,19 @@ Features added to, changed in, or removed from Ironwise, newest first.
 
 ## 2026-10-22
 
+**Changed**: Training style and workout location in program generation
+
+- **What**: The program generator asks how you want to train (Weightlifting, Calisthenics or Hybrid) and where (Gym or At home) right after your fitness goal. Choosing At home shows a checklist of equipment, and the generated program only uses exercises that equipment allows.
+- **What changed**:
+  - `components/programFactory/ProgramFactory.tsx`: two new steps (the wizard now has 7), an equipment checklist on the location step laid out in two columns, where "None" and other equipment can't be ticked together, and step titles rendered as `<h2>` from the `sections` list.
+  - The checklist slides open when At home is picked and plays in reverse when switching back to Gym: rows fade in top-down and out bottom-up with CSS `opacity`/`transform` transitions, the panel height animates with the Web Animations API, and reduced motion keeps only the fade. Adds an `in-out-strong` easing to `tailwind.config.mjs`.
+  - `POST /api/v1/programs/generate` takes three new optional fields: `training_style` (`Weightlifting` | `Calisthenics` | `Hybrid`, default `Weightlifting`), `workout_location` (`Gym` | `Home`, default `Gym`) and `home_equipment` (list of known equipment names, default empty, ignored for `Gym`). Unknown values are rejected with 422.
+  - `models/programGeneration.py` (`ProgramOptions`) and `utils/programGenerator.py` (prompt now includes style, location and equipment).
+  - `types/programCreation.ts`: `ProgramOptions` gains the three fields.
+- **What it affects**:
+  - `/aiProgramFactory`: the summary lists training style, location and, for home workouts, equipment. Each row's edit button jumps to the right step. The desktop progress bar has shorter labels ("Goal", "Style", "Location", "Experience", "Frequency", "About You", "Summary").
+  - Existing API callers keep working because the new fields have defaults. Jobs queued before the deploy are generated as gym weightlifting programs.
+
 **Changed**: Login and sign-up redesign
 
 - **What**: The login and sign-up pages open on the landing page's shimmering dot field, which fades to black behind the form. Fields are rounded with icons, passwords have a show/hide button, and the submit button is a lime pill. The form sits near the vertical center of the screen, with the field reaching most of the way down behind it and dimmed slightly under the inputs. On phones everything fits above the bottom nav, including on small screens. On desktop the layout is a centered column instead of a card.

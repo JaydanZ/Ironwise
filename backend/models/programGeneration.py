@@ -1,10 +1,27 @@
-from typing import Annotated
-from pydantic import BaseModel, Field, field_validator
+from typing import Annotated, Literal
+from pydantic import BaseModel, Field, field_validator, model_validator
 from .programs import ProgramName, Focus, ExerciseName, ExerciseTip, SetsOrReps, check_unique_days
 from .programRules import Weekday, MAX_DAYS, MAX_EXERCISES_PER_DAY
 
+TrainingStyle = Literal["Weightlifting", "Calisthenics", "Hybrid"]
+WorkoutLocation = Literal["Gym", "Home"]
+HomeEquipment = Literal[
+    "None",
+    "Pull-up bar",
+    "Dip bars / rings",
+    "Dumbbells",
+    "Kettlebells",
+    "Resistance bands",
+    "Bench",
+    "Barbell and rack",
+]
+
 class ProgramOptions(BaseModel):
     fitness_goal:str
+    ## Defaults keep jobs queued before these options existed loadable by the worker
+    training_style:TrainingStyle = "Weightlifting"
+    workout_location:WorkoutLocation = "Gym"
+    home_equipment:list[HomeEquipment] = []
     years_of_experience:str
     days_per_week:str
     age:int
@@ -13,6 +30,12 @@ class ProgramOptions(BaseModel):
     gender:str
     isLoggedIn:bool
     freeLimitEnabled:bool
+
+    @model_validator(mode="after")
+    def gym_has_full_equipment(self):
+        if self.workout_location == "Gym":
+            self.home_equipment = []
+        return self
 
 ## Uses the same field limits as saved programs so a generated program can always be saved
 class Exercise(BaseModel):

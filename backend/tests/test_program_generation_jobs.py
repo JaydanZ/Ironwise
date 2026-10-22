@@ -20,6 +20,9 @@ LATEST_URL = f"{GENERATE_URL}/latest"
 
 PROGRAM_OPTIONS = {
     "fitness_goal": "Strength",
+    "training_style": "Calisthenics",
+    "workout_location": "Home",
+    "home_equipment": ["Pull-up bar"],
     "years_of_experience": "1-2",
     "days_per_week": "3",
     "age": 25,
