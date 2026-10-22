@@ -48,6 +48,7 @@ Still in active development.
 - Breached-password check via Have I Been Pwned (k-anonymity).
 - Account lockout after repeated failed logins, without revealing which accounts exist.
 - Password reset by emailed six-digit code (Resend).
+- Login and sign-up screens on the landing page's animated dot field, with a show-password toggle.
 - Per-route rate limiting with SlowAPI plus Nginx `limit_req`.
 - Locked-down CORS and auth middleware on all non-public routes.
 

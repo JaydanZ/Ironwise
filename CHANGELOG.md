@@ -2,6 +2,20 @@
 
 Features added to, changed in, or removed from Ironwise, newest first.
 
+## 2026-10-22
+
+**Changed**: Login and sign-up redesign
+
+- **What**: The login and sign-up pages open on the landing page's shimmering dot field, which fades to black behind the form. Fields are rounded with icons, passwords have a show/hide button, and the submit button is a lime pill. The form sits near the vertical center of the screen, with the field reaching most of the way down behind it and dimmed slightly under the inputs. On phones everything fits above the bottom nav, including on small screens. On desktop the layout is a centered column instead of a card.
+- **What changed**:
+  - New `components/auth/AuthLayout.tsx` (page layout plus `AuthSubmitButton`) and `components/auth/AuthField.tsx` (labelled input with icon, error text and password toggle).
+  - `routes/login.tsx` and `routes/registerUser.tsx` now render through these. Validation and API calls are unchanged.
+  - Reuses `components/landing/SignalField.tsx` with cursor tracking off.
+  - `routes/__root.tsx`: the desktop nav is transparent over the field on `/login` and `/registerUser` as well as `/`, and turns into a blurred bar once you scroll.
+- **What it affects**:
+  - `/login` and `/registerUser` at every width: field labels are kept for screen readers but hidden, a back button links to `/` (login) or `/login` (sign-up), the switch to the other page is a text link instead of a button, errors show without the `Error:` prefix, and inputs get `autocomplete` hints.
+  - The headings now read "Welcome back" and "Create your account".
+
 ## 2026-10-21
 
 **Changed**: Landing page redesign
