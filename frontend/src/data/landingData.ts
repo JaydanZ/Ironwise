@@ -171,3 +171,98 @@ export const SAMPLE_WEEK: Workout[] = [
     ]
   }
 ]
+
+// Everything below is sample data for the landing page previews, not a real account
+export const PREVIEW_ACCOUNT = {
+  username: 'sam',
+  email: 'sam@example.com',
+  programName: 'Hypertrophy 4-day',
+  streak: 9,
+  workoutsLogged: 61
+}
+
+export const PREVIEW_PROGRAMS = [
+  { name: 'Hypertrophy 4-day', days: 4, isActive: true },
+  { name: 'Strength block', days: 3, isActive: false },
+  { name: 'Summer full body', days: 5, isActive: false }
+]
+
+export const PREVIEW_HISTORY = [
+  { month: 'Oct', day: 20, focus: 'Lower body', weekday: 'Tuesday', sets: 16 },
+  { month: 'Oct', day: 19, focus: 'Upper body', weekday: 'Monday', sets: 17 },
+  { month: 'Oct', day: 16, focus: 'Lower body', weekday: 'Friday', sets: 15 }
+]
+
+export type PreviewDayStatus = 'done' | 'today' | 'planned' | 'rest'
+
+export const PREVIEW_WEEK: {
+  shortName: string
+  dayOfMonth: number
+  status: PreviewDayStatus
+}[] = [
+  { shortName: 'Mon', dayOfMonth: 19, status: 'done' },
+  { shortName: 'Tue', dayOfMonth: 20, status: 'done' },
+  { shortName: 'Wed', dayOfMonth: 21, status: 'rest' },
+  { shortName: 'Thu', dayOfMonth: 22, status: 'today' },
+  { shortName: 'Fri', dayOfMonth: 23, status: 'planned' },
+  { shortName: 'Sat', dayOfMonth: 24, status: 'rest' },
+  { shortName: 'Sun', dayOfMonth: 25, status: 'rest' }
+]
+
+export const PREVIEW_PREVIOUS_SETS = [
+  { reps: 6, weight: 80 },
+  { reps: 6, weight: 80 },
+  { reps: 5, weight: 80 },
+  { reps: 5, weight: 77.5 }
+]
+
+export const PREVIEW_TRENDS: {
+  exercise: string
+  points: { date: string; e1rm: number }[]
+}[] = [
+  {
+    exercise: 'Back Squat',
+    points: [
+      { date: 'Jul 7', e1rm: 112 },
+      { date: 'Jul 21', e1rm: 115 },
+      { date: 'Aug 4', e1rm: 114 },
+      { date: 'Aug 18', e1rm: 119 },
+      { date: 'Sep 1', e1rm: 122 },
+      { date: 'Sep 15', e1rm: 121 },
+      { date: 'Sep 29', e1rm: 126 },
+      { date: 'Oct 13', e1rm: 128 }
+    ]
+  },
+  {
+    exercise: 'Bench Press',
+    points: [
+      { date: 'Jul 6', e1rm: 88 },
+      { date: 'Jul 20', e1rm: 90 },
+      { date: 'Aug 3', e1rm: 91 },
+      { date: 'Aug 17', e1rm: 91 },
+      { date: 'Aug 31', e1rm: 94 },
+      { date: 'Sep 14', e1rm: 95 },
+      { date: 'Sep 28', e1rm: 94 },
+      { date: 'Oct 12', e1rm: 96 }
+    ]
+  },
+  {
+    exercise: 'Deadlift',
+    points: [
+      { date: 'Jul 10', e1rm: 140 },
+      { date: 'Jul 24', e1rm: 142 },
+      { date: 'Aug 7', e1rm: 147 },
+      { date: 'Aug 21', e1rm: 146 },
+      { date: 'Sep 4', e1rm: 151 },
+      { date: 'Sep 18', e1rm: 155 },
+      { date: 'Oct 2', e1rm: 154 },
+      { date: 'Oct 16', e1rm: 160 }
+    ]
+  }
+]
+
+export const PREVIEW_RECORDS = [
+  { exercise: 'Deadlift', set: '137.5 kg × 5', e1rm: 160, gain: 6, when: 'Oct 16' },
+  { exercise: 'Back Squat', set: '110 kg × 5', e1rm: 128, gain: 2, when: 'Oct 13' },
+  { exercise: 'Bench Press', set: '85 kg × 4', e1rm: 96, gain: 2, when: 'Oct 12' }
+]
