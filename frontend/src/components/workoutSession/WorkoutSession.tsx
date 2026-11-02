@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { ArrowLeft } from 'lucide-react'
 import { Workout } from '@/types/programCreation'
-import { SubmitWorkoutResponse, WeightUnit } from '@/types/workoutSession'
+import { SubmitWorkoutResponse } from '@/types/workoutSession'
 import {
   isExerciseComplete,
   useWorkoutSession
@@ -27,6 +27,7 @@ import { panelClass, primaryButtonClass } from '../profile/profileStyles'
 import { ExerciseItem } from './ExerciseItem'
 import { SessionComplete } from './SessionComplete'
 import { SessionSummary, summarizeSession } from './sessionSummary'
+import { UnitToggle } from './UnitToggle'
 
 interface WorkoutSessionProps {
   programId: string
@@ -36,43 +37,6 @@ interface WorkoutSessionProps {
 
 const ghostButtonClass =
   'h-10 border border-neutral-700 px-4 text-sm font-medium text-neutral-200 transition-[transform,background-color,color] duration-150 ease-out-strong hover:bg-neutral-800/70 hover:text-neutral-50 active:scale-[0.97] disabled:opacity-40'
-
-const UNITS: WeightUnit[] = ['lb', 'kg']
-
-const UnitToggle = ({
-  unit,
-  onChange
-}: {
-  unit: WeightUnit
-  onChange: (unit: WeightUnit) => void
-}) => (
-  <div
-    role="radiogroup"
-    aria-label="Weight unit"
-    className="inline-flex h-9 shrink-0 rounded-md border border-neutral-800 bg-neutral-900/70 p-0.5"
-  >
-    {UNITS.map((option) => {
-      const selected = option === unit
-      return (
-        <button
-          key={option}
-          type="button"
-          role="radio"
-          aria-checked={selected}
-          onClick={() => onChange(option)}
-          className={clsx(
-            'min-w-11 rounded-[5px] px-3 text-sm font-medium outline-none transition-[color,background-color,transform] duration-150 ease-out focus-visible:ring-1 focus-visible:ring-app-colors-300 active:scale-[0.97]',
-            selected
-              ? 'bg-neutral-700/80 text-neutral-50'
-              : 'text-neutral-400 hover:text-neutral-200'
-          )}
-        >
-          {option}
-        </button>
-      )
-    })}
-  </div>
-)
 
 const getErrorMessage = (error: unknown): string => {
   const status = (error as { status?: number | string })?.status
