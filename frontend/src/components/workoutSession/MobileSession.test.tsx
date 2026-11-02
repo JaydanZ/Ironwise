@@ -33,6 +33,8 @@ const workout: Workout = {
   ]
 }
 
+const submit = vi.fn()
+
 const Harness = ({ plan = workout }: { plan?: Workout }) => {
   const session = useWorkoutSession({ programId: 'p1', workout: plan })
   return (
@@ -50,24 +52,92 @@ const Harness = ({ plan = workout }: { plan?: Workout }) => {
       onRemoveSet={session.removeSet}
       onUnitChange={session.setUnit}
       onFinishEarly={vi.fn()}
-      onSubmit={vi.fn()}
+      onSubmit={submit}
     />
   )
 }
 
 const heading = () => screen.getByRole('heading', { level: 1 }).textContent
-const done = () =>
-  fireEvent.click(screen.getByRole('button', { name: 'Mark set done' }))
+const doneButton = () => screen.getByRole('button', { name: 'Mark set done' })
+const laterTap = () => vi.setSystemTime(Date.now() + 1000)
+const done = () => {
+  laterTap()
+  fireEvent.click(doneButton())
+}
 const setButton = (number: number) =>
   screen.getByRole('button', { name: new RegExp(`^Set ${number}`) })
 
 describe('MobileSession', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
     window.localStorage.clear()
+    submit.mockClear()
     Element.prototype.scrollIntoView = vi.fn()
   })
 
-  afterEach(cleanup)
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+  })
+
+  it('ignores the second tap of a double tap on done', () => {
+    render(<Harness />)
+    done()
+    fireEvent.click(doneButton())
+    expect(screen.getByText('Set 2 of 2')).toBeTruthy()
+    expect(setButton(2).getAttribute('aria-label')).not.toContain('logged')
+  })
+
+  it('ignores a double tap that lands on submit', () => {
+    const plan = { ...workout, exercises: [workout.exercises[1]] }
+    render(<Harness plan={plan} />)
+    done()
+    const submitButton = screen.getByRole('button', { name: 'Submit workout' })
+    fireEvent.click(submitButton)
+    expect(submit).not.toHaveBeenCalled()
+    laterTap()
+    fireEvent.click(submitButton)
+    expect(submit).toHaveBeenCalledTimes(1)
+  })
+
+  it('un-logs a set with clear set', () => {
+    render(<Harness />)
+    done()
+    fireEvent.click(setButton(1))
+    fireEvent.click(screen.getByRole('button', { name: 'Clear set 1' }))
+    expect(setButton(1).getAttribute('aria-label')).not.toContain('logged')
+    expect(setButton(1).getAttribute('aria-current')).toBe('true')
+  })
+
+  it('keeps focus on done across sets and exercises', () => {
+    render(<Harness />)
+    doneButton().focus()
+    done()
+    expect(document.activeElement).toBe(doneButton())
+    done()
+    expect(heading()).toBe('Pull Up')
+    expect(document.activeElement).toBe(doneButton())
+  })
+
+  it('moves focus to submit when the last set is done', () => {
+    const plan = { ...workout, exercises: [workout.exercises[1]] }
+    render(<Harness plan={plan} />)
+    doneButton().focus()
+    done()
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Submit workout' })
+    )
+  })
+
+  it('returns to submit when the set being edited is removed', () => {
+    const plan = { ...workout, exercises: [workout.exercises[0]] }
+    render(<Harness plan={plan} />)
+    done()
+    done()
+    fireEvent.click(setButton(2))
+    fireEvent.click(screen.getByRole('button', { name: /Remove set 2/ }))
+    expect(screen.getByRole('button', { name: 'Submit workout' })).toBeTruthy()
+  })
 
   it('starts on the first exercise and first set', () => {
     render(<Harness />)

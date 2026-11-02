@@ -55,6 +55,7 @@ describe('WorkoutSession layouts', () => {
 
   afterEach(() => {
     cleanup()
+    vi.useRealTimers()
     window.innerWidth = originalWidth
     vi.restoreAllMocks()
   })
@@ -73,8 +74,10 @@ describe('WorkoutSession layouts', () => {
 
   it('submits sets logged on mobile with a blank weight as null', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.useFakeTimers({ toFake: ['Date'] })
     renderAt(390)
     fireEvent.click(screen.getByRole('button', { name: 'Mark set done' }))
+    vi.setSystemTime(Date.now() + 1000)
     fireEvent.click(screen.getByRole('button', { name: 'Submit workout' }))
     await waitFor(() => expect(submitWorkout).toHaveBeenCalledTimes(1))
     expect(submitWorkout.mock.calls[0]).toMatchObject([

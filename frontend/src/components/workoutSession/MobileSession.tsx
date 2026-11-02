@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { Workout } from '@/types/programCreation'
@@ -21,6 +21,9 @@ import {
   selectedSetIndex
 } from './sessionNavigation'
 import { SetLogPanel } from './SetLogPanel'
+
+// A fast second tap lands on the next set's done button, or on Submit, in the same spot
+const DOUBLE_TAP_MS = 400
 
 interface MobileSessionProps {
   workout: Workout
@@ -66,6 +69,7 @@ export const MobileSession = ({
     firstIncompleteExercise(entries)
   )
   const [setOverride, setSetOverride] = useState<number | null>(null)
+  const lastDoneAt = useRef(0)
 
   useEffect(() => {
     document.body.setAttribute('data-workout-session', '')
@@ -76,7 +80,9 @@ export const MobileSession = ({
   const sets = entries[exerciseIndex]
   const previousExercise = previous?.[exercise.name]
   const setIndex = selectedSetIndex(sets, setOverride)
-  const showSubmit = allComplete && setOverride === null
+  const editingSet = setOverride !== null && setOverride < sets.length
+  const showSubmit = allComplete && !editingSet
+  const isDoubleTap = () => Date.now() - lastDoneAt.current < DOUBLE_TAP_MS
 
   const jumpTo = (index: number) => {
     setExerciseIndex(index)
@@ -84,6 +90,8 @@ export const MobileSession = ({
   }
 
   const handleDone = ({ weight, reps }: PanelValues) => {
+    if (isDoubleTap()) return
+    lastDoneAt.current = Date.now()
     const nextExercise = exerciseAfterDone(
       entries,
       exerciseIndex,
@@ -139,11 +147,12 @@ export const MobileSession = ({
           onNoteChange={(set, value) =>
             onUpdateSet(exerciseIndex, set, 'notes', value)
           }
+          onClearSet={(set) => onFill(exerciseIndex, set, '', '')}
         />
       </div>
 
       <SetLogPanel
-        key={`${exerciseIndex}:${setIndex}:${unit}`}
+        resetKey={`${exerciseIndex}:${setIndex}:${unit}`}
         setNumber={setIndex + 1}
         totalSets={sets.length}
         seed={seedValues({
@@ -168,7 +177,9 @@ export const MobileSession = ({
         onUnitChange={onUnitChange}
         onFinishEarly={onFinishEarly}
         onDone={handleDone}
-        onSubmit={onSubmit}
+        onSubmit={() => {
+          if (!isDoubleTap()) onSubmit()
+        }}
       />
     </div>
   )

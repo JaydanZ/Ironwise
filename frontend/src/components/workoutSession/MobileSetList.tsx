@@ -25,6 +25,7 @@ interface MobileSetListProps {
   onAddSet: () => void
   onRemoveSet: () => void
   onNoteChange: (set: number, value: string) => void
+  onClearSet: (set: number) => void
 }
 
 const loggedText = (entry: SetEntry, unit: WeightUnit) =>
@@ -39,7 +40,8 @@ export const MobileSetList = ({
   onSelect,
   onAddSet,
   onRemoveSet,
-  onNoteChange
+  onNoteChange,
+  onClearSet
 }: MobileSetListProps) => {
   const selectedRow = useRef<HTMLButtonElement>(null)
 
@@ -103,6 +105,15 @@ export const MobileSetList = ({
       </ol>
 
       <div className="flex items-center justify-end gap-2 pt-3">
+        {selectedSet !== null && isSetComplete(sets[selectedSet]) && (
+          <button
+            type="button"
+            onClick={() => onClearSet(selectedSet)}
+            className="mr-auto min-h-11 rounded-md px-2 text-sm text-neutral-400 outline-none transition-colors duration-150 hover:text-red-300 focus-visible:ring-1 focus-visible:ring-app-colors-300"
+          >
+            Clear set {selectedSet + 1}
+          </button>
+        )}
         {sets.length > MIN_SETS && (
           <button
             type="button"
@@ -138,7 +149,7 @@ export const MobileSetList = ({
           autoComplete="off"
           maxLength={280}
           aria-label={`Set ${selectedSet + 1} notes`}
-          placeholder="Add a note"
+          placeholder={`Note for set ${selectedSet + 1}`}
           value={sets[selectedSet].notes}
           onChange={(event) => onNoteChange(selectedSet, event.target.value)}
           className="mt-2 h-11 w-full rounded-md border border-neutral-800 bg-neutral-900/70 px-3 text-base text-neutral-50 outline-none transition-[border-color,background-color] duration-150 ease-out placeholder:text-neutral-500 focus:border-app-colors-300/70 focus:bg-neutral-900"

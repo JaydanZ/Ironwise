@@ -9,6 +9,7 @@ import { PanelValues, stepReps, stepWeight } from './sessionNavigation'
 import { UnitToggle } from './UnitToggle'
 
 interface SetLogPanelProps {
+  resetKey: string
   setNumber: number
   totalSets: number
   seed: PanelValues
@@ -61,6 +62,7 @@ const Stepper = ({
 )
 
 export const SetLogPanel = ({
+  resetKey,
   setNumber,
   totalSets,
   seed,
@@ -78,14 +80,29 @@ export const SetLogPanel = ({
 }: SetLogPanelProps) => {
   const { weight: seedWeight, reps: seedReps } = seed
   const [values, setValues] = useState<PanelValues>(seed)
-  const edited = useRef(false)
+  const [edited, setEdited] = useState(false)
+  const [seededFor, setSeededFor] = useState(resetKey)
+  const submitButton = useRef<HTMLButtonElement>(null)
+  const donePressed = useRef(false)
+
+  // Reset in place rather than by remounting, so focus stays on the done button
+  if (seededFor !== resetKey) {
+    setSeededFor(resetKey)
+    setEdited(false)
+    setValues(seed)
+  }
 
   useEffect(() => {
-    if (!edited.current) setValues({ weight: seedWeight, reps: seedReps })
-  }, [seedWeight, seedReps])
+    if (!edited) setValues({ weight: seedWeight, reps: seedReps })
+  }, [edited, seedWeight, seedReps])
+
+  useEffect(() => {
+    if (showSubmit && donePressed.current) submitButton.current?.focus()
+    donePressed.current = false
+  }, [showSubmit])
 
   const edit = (next: Partial<PanelValues>) => {
-    edited.current = true
+    setEdited(true)
     setValues((current) => ({ ...current, ...next }))
   }
 
@@ -121,6 +138,7 @@ export const SetLogPanel = ({
 
       {showSubmit ? (
         <Button
+          ref={submitButton}
           disabled={isSubmitting}
           onClick={onSubmit}
           className={clsx(primaryButtonClass, 'mt-3 h-12 w-full')}
@@ -151,7 +169,10 @@ export const SetLogPanel = ({
               type="button"
               aria-label="Mark set done"
               disabled={values.reps === ''}
-              onClick={() => onDone(values)}
+              onClick={() => {
+                donePressed.current = true
+                onDone(values)
+              }}
               className="flex size-[4.5rem] items-center justify-center rounded-full bg-app-colors-300 text-app-colors-500 outline-none transition-transform duration-150 ease-out-strong focus-visible:ring-2 focus-visible:ring-app-colors-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#141414] active:scale-[0.94] disabled:opacity-40 motion-reduce:active:scale-100"
             >
               <Check aria-hidden strokeWidth={3} className="size-8" />

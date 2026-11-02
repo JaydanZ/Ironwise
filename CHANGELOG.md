@@ -6,7 +6,7 @@ Features added to, changed in, or removed from Ironwise, newest first.
 
 **Changed**: Mobile workout session
 
-- **What**: On phones, a workout session now shows one exercise at a time. The current exercise sits at the top with the next one in grey beside it, and pressing and holding the grey text lists every exercise to jump to. Sets appear below an image slot with the current set outlined in lime. A panel at the bottom logs weight and reps with steppers and a done button, then moves to the next set or exercise automatically.
+- **What**: On phones, a workout session now shows one exercise at a time. The current exercise sits at the top with the next one in grey beside it, and pressing and holding the grey text lists every exercise to jump to. Sets appear below an image slot with the current set outlined in lime. A panel at the bottom logs weight and reps with steppers and a done button, then moves to the next set or exercise automatically. Tapping a logged set lets you edit or clear it.
 - **What changed**:
   - New in `components/workoutSession/`: `MobileSession`, `SetLogPanel`, `ExerciseSwitcher`, `ExerciseImage` (a placeholder until real images are added), `MobileSetList`, `UnitToggle` (moved out of `WorkoutSession`) and `sessionNavigation.ts`.
   - `WorkoutSession` renders `MobileSession` under 800px and the existing layout otherwise.

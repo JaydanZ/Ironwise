@@ -18,6 +18,7 @@ const props = (
   onAddSet: vi.fn(),
   onRemoveSet: vi.fn(),
   onNoteChange: vi.fn(),
+  onClearSet: vi.fn(),
   ...overrides
 })
 
@@ -75,6 +76,20 @@ describe('MobileSetList', () => {
     expect(note.value).toBe('Felt good')
     fireEvent.change(note, { target: { value: 'Heavy' } })
     expect(onNoteChange).toHaveBeenCalledWith(1, 'Heavy')
+  })
+
+  it('names the set the note belongs to', () => {
+    render(<MobileSetList {...props()} />)
+    expect(screen.getByPlaceholderText('Note for set 2')).toBeTruthy()
+  })
+
+  it('offers clear set only when the selected set is logged', () => {
+    const onClearSet = vi.fn()
+    const { rerender } = render(<MobileSetList {...props({ onClearSet })} />)
+    expect(screen.queryByRole('button', { name: /Clear set/ })).toBeNull()
+    rerender(<MobileSetList {...props({ onClearSet, selectedSet: 0 })} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Clear set 1' }))
+    expect(onClearSet).toHaveBeenCalledWith(0)
   })
 
   it('hides the note field when no set is selected', () => {

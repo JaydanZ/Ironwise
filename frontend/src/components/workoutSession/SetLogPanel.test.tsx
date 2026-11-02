@@ -7,6 +7,7 @@ import { SetLogPanel } from './SetLogPanel'
 const props = (
   overrides: Partial<ComponentProps<typeof SetLogPanel>> = {}
 ): ComponentProps<typeof SetLogPanel> => ({
+  resetKey: '0:1:lb',
   setNumber: 2,
   totalSets: 4,
   seed: { weight: '135', reps: '8' },
@@ -81,6 +82,18 @@ describe('SetLogPanel', () => {
     rerender(<SetLogPanel {...props({ seed: { weight: '135', reps: '6' } })} />)
     expect(weight().value).toBe('')
     expect(reps().value).toBe('9')
+  })
+
+  it('takes the new set’s values on reset, even after edits', () => {
+    const { rerender } = render(<SetLogPanel {...props()} />)
+    fireEvent.click(button('Increase reps'))
+    rerender(
+      <SetLogPanel
+        {...props({ resetKey: '0:2:lb', seed: { weight: '140', reps: '6' } })}
+      />
+    )
+    expect(weight().value).toBe('140')
+    expect(reps().value).toBe('6')
   })
 
   it('swaps the controls for submit when every set is logged', () => {
