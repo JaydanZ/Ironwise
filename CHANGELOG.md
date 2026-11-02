@@ -2,6 +2,23 @@
 
 Features added to, changed in, or removed from Ironwise, newest first.
 
+## 2026-11-02
+
+**Changed**: Mobile workout session
+
+- **What**: On phones, a workout session now shows one exercise at a time. The current exercise sits at the top with the next one in grey beside it, and pressing and holding the grey text lists every exercise to jump to. Sets appear below an image slot with the current set outlined in lime. A panel at the bottom logs weight and reps with steppers and a done button, then moves to the next set or exercise automatically.
+- **What changed**:
+  - New in `components/workoutSession/`: `MobileSession`, `SetLogPanel`, `ExerciseSwitcher`, `ExerciseImage` (a placeholder until real images are added), `MobileSetList`, `UnitToggle` (moved out of `WorkoutSession`) and `sessionNavigation.ts`.
+  - `WorkoutSession` renders `MobileSession` under 800px and the existing layout otherwise.
+  - `useIsMobile` is correct from the first render instead of starting as `false`.
+  - `routes/__root.tsx`: the mobile bottom nav hides while `<body>` has `data-workout-session`.
+- **What it affects**:
+  - `/workout` on viewports under 800px. Desktop is unchanged.
+  - The bottom nav is hidden during a mobile session, and the back arrow leads to Training. It returns on the completion screen.
+  - Mobile now has one note field for the selected set, instead of a note field on every set.
+  - Pages using `useIsMobile` (the root layout, `ProgressDemo`, `ManualProgramCreation`) get the right layout on first render, with no first-frame desktop flash on phones.
+  - The API, drafts and stored workouts are unchanged. A draft started on one layout continues on the other.
+
 ## 2026-10-22
 
 **Changed**: Training style and workout location in program generation

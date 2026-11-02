@@ -44,7 +44,7 @@ function MobileNav({ routes }: MobileNavProps) {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-[100] border-t [view-transition-name:site-nav] border-neutral-800/80 bg-app-colors-500 pb-[max(env(safe-area-inset-bottom),0.5rem)] supports-[backdrop-filter]:bg-app-colors-500/80 supports-[backdrop-filter]:backdrop-blur-xl supports-[backdrop-filter]:backdrop-saturate-150"
+      className="[body[data-workout-session]_&]:hidden fixed inset-x-0 bottom-0 z-[100] border-t [view-transition-name:site-nav] border-neutral-800/80 bg-app-colors-500 pb-[max(env(safe-area-inset-bottom),0.5rem)] supports-[backdrop-filter]:bg-app-colors-500/80 supports-[backdrop-filter]:backdrop-blur-xl supports-[backdrop-filter]:backdrop-saturate-150"
     >
       <div
         className="relative mx-auto grid max-w-md px-2 pt-1"

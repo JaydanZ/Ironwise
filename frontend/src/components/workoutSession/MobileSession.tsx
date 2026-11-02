@@ -95,7 +95,7 @@ export const MobileSession = ({
   }
 
   return (
-    <div className="fixed inset-x-0 top-0 z-40 flex h-[100dvh] flex-col bg-app-colors-500">
+    <div className="fixed inset-x-0 top-0 z-40 flex h-dvh flex-col bg-app-colors-500">
       <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)] items-center gap-2 border-b border-neutral-800 px-4 pb-2 pt-[max(env(safe-area-inset-top),0.5rem)]">
         <Link
           to="/training"

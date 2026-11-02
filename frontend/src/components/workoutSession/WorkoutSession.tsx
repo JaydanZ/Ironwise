@@ -12,6 +12,7 @@ import {
   useGetPreviousPerformanceQuery,
   useSubmitWorkoutMutation
 } from '@/services/protectedRoutesAPI'
+import useIsMobile from '@/hooks/useIsMobile'
 import { Accordion } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/dialog'
 import { panelClass, primaryButtonClass } from '../profile/profileStyles'
 import { ExerciseItem } from './ExerciseItem'
+import { MobileSession } from './MobileSession'
 import { SessionComplete } from './SessionComplete'
 import { SessionSummary, summarizeSession } from './sessionSummary'
 import { UnitToggle } from './UnitToggle'
@@ -51,6 +53,7 @@ export const WorkoutSession = ({
   programName,
   workout
 }: WorkoutSessionProps) => {
+  const isMobile = useIsMobile()
   const {
     state,
     performedOn,
@@ -114,6 +117,65 @@ export const WorkoutSession = ({
 
   const isSubmitting = submitState.isLoading
   const setsLeft = progress.totalSets - progress.completedSets
+
+  const finishEarlyDialog = (
+    <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <DialogContent className="w-[calc(100%-2rem)] max-w-md rounded-lg border-neutral-800 bg-[#141414]">
+        <DialogHeader className="text-left">
+          <DialogTitle className="text-neutral-50">
+            Finish with {progress.completedSets} of {progress.totalSets} sets?
+          </DialogTitle>
+          <DialogDescription className="text-neutral-400">
+            Only the sets you logged are saved. Skipped sets won&rsquo;t show
+            up as your previous numbers next time.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-0">
+          <DialogClose asChild>
+            <Button
+              variant="ghost"
+              className="h-10 text-neutral-300 hover:bg-neutral-800/70 hover:text-neutral-50"
+            >
+              Keep going
+            </Button>
+          </DialogClose>
+          <Button
+            className={primaryButtonClass}
+            disabled={isSubmitting}
+            onClick={() => handleSubmit(false)}
+          >
+            {isSubmitting ? 'Saving...' : 'Save and finish'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+
+  if (isMobile)
+    return (
+      <>
+        <MobileSession
+          workout={workout}
+          entries={state.entries}
+          unit={state.unit}
+          previous={previousQuery.data}
+          allComplete={progress.allComplete}
+          completedSets={progress.completedSets}
+          isSubmitting={isSubmitting}
+          errorMessage={
+            submitState.isError ? getErrorMessage(submitState.error) : null
+          }
+          onFill={fillSet}
+          onUpdateSet={updateSet}
+          onAddSet={addSet}
+          onRemoveSet={removeSet}
+          onUnitChange={setUnit}
+          onFinishEarly={() => setConfirmOpen(true)}
+          onSubmit={() => handleSubmit(true)}
+        />
+        {finishEarlyDialog}
+      </>
+    )
 
   return (
     <>
@@ -218,36 +280,7 @@ export const WorkoutSession = ({
         </div>
       </div>
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="w-[calc(100%-2rem)] max-w-md rounded-lg border-neutral-800 bg-[#141414]">
-          <DialogHeader className="text-left">
-            <DialogTitle className="text-neutral-50">
-              Finish with {progress.completedSets} of {progress.totalSets} sets?
-            </DialogTitle>
-            <DialogDescription className="text-neutral-400">
-              Only the sets you logged are saved. Skipped sets won&rsquo;t show
-              up as your previous numbers next time.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-0">
-            <DialogClose asChild>
-              <Button
-                variant="ghost"
-                className="h-10 text-neutral-300 hover:bg-neutral-800/70 hover:text-neutral-50"
-              >
-                Keep going
-              </Button>
-            </DialogClose>
-            <Button
-              className={primaryButtonClass}
-              disabled={isSubmitting}
-              onClick={() => handleSubmit(false)}
-            >
-              {isSubmitting ? 'Saving...' : 'Save and finish'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {finishEarlyDialog}
     </>
   )
 }

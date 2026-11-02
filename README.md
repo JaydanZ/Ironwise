@@ -30,6 +30,7 @@ Still in active development.
 ### Logging workouts
 
 - Log weight and reps set by set, with your last performance shown for each exercise.
+- A focused phone layout that shows one exercise at a time: log each set with large weight and reps controls and one done button, and move to the next exercise automatically. Press and hold the next exercise to jump to any other.
 - kg/lb switching with conversion for comparisons.
 - Drafts saved locally so a refresh doesn't lose a session.
 - End-of-session summary with total volume.

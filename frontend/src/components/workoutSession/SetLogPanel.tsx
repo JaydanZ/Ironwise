@@ -101,7 +101,7 @@ export const SetLogPanel = ({
       )}
 
       <div className="flex items-center justify-between gap-2">
-        <p className="min-w-0 flex-1 truncate text-sm tabular-nums text-neutral-400">
+        <p className="line-clamp-2 min-w-0 flex-1 text-sm leading-tight tabular-nums text-neutral-400">
           {showSubmit
             ? 'Every set logged'
             : `Set ${setNumber} of ${totalSets}${lastText ? ` · Last ${lastText}` : ''}`}
