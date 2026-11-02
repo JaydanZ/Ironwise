@@ -40,7 +40,7 @@ interface ExerciseItemProps {
   onRemoveSet: (exercise: number) => void
 }
 
-const setActionClass =
+export const setActionClass =
   'inline-flex size-10 items-center justify-center rounded-md outline-none transition-[transform,color,background-color,border-color] duration-150 ease-out-strong focus-visible:ring-1 focus-visible:ring-app-colors-300 active:scale-[0.94] disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-[1.125rem]'
 
 const formatSessionDate = (dateStr: string) => {
