@@ -2,6 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { ArrowLeft } from 'lucide-react'
+import {
+  motion,
+  PanInfo,
+  useDragControls,
+  useReducedMotion
+} from 'motion/react'
 import { Workout } from '@/types/programCreation'
 import {
   PreviousPerformance,
@@ -22,7 +28,9 @@ import {
   nextExerciseIndex,
   PanelValues,
   seedValues,
-  selectedSetIndex
+  selectedSetIndex,
+  startsInSwipeArea,
+  swipeTarget
 } from './sessionNavigation'
 import { SetLogPanel } from './SetLogPanel'
 import {
@@ -76,13 +84,18 @@ export const MobileSession = ({
   onFinishEarly,
   onSubmit
 }: MobileSessionProps) => {
-  const [exerciseIndex, setExerciseIndex] = useState(() =>
-    firstIncompleteExercise(entries)
-  )
+  const [position, setPosition] = useState(() => ({
+    exerciseIndex: firstIncompleteExercise(entries),
+    enterFrom: 'right' as 'left' | 'right'
+  }))
+  const { exerciseIndex, enterFrom } = position
   const [setOverride, setSetOverride] = useState<number | null>(null)
   const [removedSets, setRemovedSets] = useState(0)
   const lastDoneAt = useRef(0)
   const dismissUndo = useRef<(() => void) | null>(null)
+  const didSwipe = useRef(false)
+  const prefersReducedMotion = useReducedMotion()
+  const dragControls = useDragControls()
 
   useHideSiteNav()
 
@@ -99,9 +112,25 @@ export const MobileSession = ({
   const isDoubleTap = () => Date.now() - lastDoneAt.current < DOUBLE_TAP_MS
 
   const jumpTo = (index: number) => {
-    setExerciseIndex(index)
+    // Functional so an undo toast from an earlier render compares the live index
+    setPosition((current) => ({
+      exerciseIndex: index,
+      enterFrom: index < current.exerciseIndex ? 'left' : 'right'
+    }))
     setSetOverride(null)
   }
+
+  const handleSwipeEnd = (_: unknown, { offset, velocity }: PanInfo) => {
+    const target = swipeTarget(exerciseIndex, workout.exercises.length, {
+      offset,
+      velocity,
+      width: window.innerWidth
+    })
+    if (target !== null) jumpTo(target)
+  }
+
+  const swipeElastic = (hasExerciseThatWay: boolean) =>
+    hasExerciseThatWay && !prefersReducedMotion ? 0.6 : 0
 
   const handleRemoveSet = (set: number) => {
     onRemoveSet(exerciseIndex, set)
@@ -149,7 +178,7 @@ export const MobileSession = ({
   }
 
   return (
-    <div className={sessionFrameClass}>
+    <div className={clsx(sessionFrameClass, 'overflow-hidden')}>
       <header className={sessionHeaderClass}>
         <Link
           to="/training"
@@ -176,11 +205,41 @@ export const MobileSession = ({
           : `${exercise.name}, set ${setIndex + 1} of ${sets.length}`}
       </p>
 
-      <div
+      <motion.div
         key={exerciseIndex}
+        drag={workout.exercises.length > 1 ? 'x' : false}
+        dragListener={false}
+        dragControls={dragControls}
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={{
+          left: swipeElastic(exerciseIndex < workout.exercises.length - 1),
+          right: swipeElastic(exerciseIndex > 0)
+        }}
+        dragDirectionLock
+        onPointerDownCapture={(event) => {
+          didSwipe.current = false
+          const startsSwipe =
+            event.pointerType !== 'mouse' &&
+            !(event.target instanceof HTMLInputElement) &&
+            startsInSwipeArea(event.clientX, window.innerWidth)
+          if (startsSwipe) dragControls.start(event)
+        }}
+        onDragStart={() => {
+          didSwipe.current = true
+        }}
+        onDragEnd={handleSwipeEnd}
+        onClickCapture={(event) => {
+          if (didSwipe.current) {
+            event.preventDefault()
+            event.stopPropagation()
+          }
+        }}
         className={clsx(
           sessionBodyClass,
-          'duration-200 animate-in fade-in slide-in-from-right-4 motion-reduce:animate-none'
+          'touch-pan-y duration-200 animate-in fade-in motion-reduce:animate-none',
+          enterFrom === 'left'
+            ? 'slide-in-from-left-4'
+            : 'slide-in-from-right-4'
         )}
       >
         <ExerciseImage name={exercise.name} />
@@ -203,7 +262,7 @@ export const MobileSession = ({
           }
           onClearSet={(set) => onFill(exerciseIndex, set, '', '')}
         />
-      </div>
+      </motion.div>
 
       <SetLogPanel
         // Removing a set can put a different set at the same position

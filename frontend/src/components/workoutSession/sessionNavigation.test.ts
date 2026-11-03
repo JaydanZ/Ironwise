@@ -7,8 +7,10 @@ import {
   nextExerciseIndex,
   seedValues,
   selectedSetIndex,
+  startsInSwipeArea,
   stepReps,
-  stepWeight
+  stepWeight,
+  swipeTarget
 } from './sessionNavigation'
 
 const logged = (reps = '8', weight = '100'): SetEntry => ({
@@ -166,5 +168,63 @@ describe('clampWeight', () => {
     expect(clampWeight('9999')).toBe('2000')
     expect(clampWeight('135.5')).toBe('135.5')
     expect(clampWeight('')).toBe('')
+  })
+})
+
+describe('swipeTarget', () => {
+  const swipe = (x: number, velocityX = 0, y = 0) => ({
+    offset: { x, y },
+    velocity: { x: velocityX, y: 0 },
+    width: 400
+  })
+
+  it('goes to the next exercise on a long swipe left', () => {
+    expect(swipeTarget(1, 3, swipe(-100))).toBe(2)
+  })
+
+  it('goes to the previous exercise on a long swipe right', () => {
+    expect(swipeTarget(1, 3, swipe(100))).toBe(0)
+  })
+
+  it('stays put on a short, slow drag', () => {
+    expect(swipeTarget(1, 3, swipe(-60, -100))).toBeNull()
+  })
+
+  it('counts a short flick as a swipe', () => {
+    expect(swipeTarget(1, 3, swipe(-40, -500))).toBe(2)
+  })
+
+  it('ignores a flick that barely moved, like a shaky tap', () => {
+    expect(swipeTarget(1, 3, swipe(-6, -500))).toBeNull()
+  })
+
+  it('ignores a flick back towards where the drag started', () => {
+    expect(swipeTarget(1, 3, swipe(-40, 500))).toBeNull()
+  })
+
+  it('ignores a mostly vertical movement', () => {
+    expect(swipeTarget(1, 3, swipe(-100, -500, 200))).toBeNull()
+  })
+
+  it('stops at the last exercise', () => {
+    expect(swipeTarget(2, 3, swipe(-100))).toBeNull()
+  })
+
+  it('stops at the first exercise', () => {
+    expect(swipeTarget(0, 3, swipe(100))).toBeNull()
+  })
+})
+
+describe('startsInSwipeArea', () => {
+  it('accepts a touch away from the screen edges', () => {
+    expect(startsInSwipeArea(200, 400)).toBe(true)
+  })
+
+  it('rejects a touch on the left edge', () => {
+    expect(startsInSwipeArea(10, 400)).toBe(false)
+  })
+
+  it('rejects a touch on the right edge', () => {
+    expect(startsInSwipeArea(390, 400)).toBe(false)
   })
 })
