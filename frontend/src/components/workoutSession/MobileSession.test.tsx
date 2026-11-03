@@ -80,6 +80,28 @@ describe('MobileSession', () => {
     vi.useRealTimers()
   })
 
+  it('sets the session in Inter without Roboto Condensed overriding it', () => {
+    const { container } = render(<Harness />)
+    expect(container.firstElementChild?.classList).toContain('font-inter')
+    expect(container.querySelector('.font-display')).toBeNull()
+  })
+
+  it('shows the exercise tip between the image and the sets', () => {
+    const plan = {
+      ...workout,
+      exercises: [{ ...workout.exercises[0], exercise_tip: 'Pause at the chest' }]
+    }
+    render(<Harness plan={plan} />)
+    const tip = screen.getByText('Pause at the chest')
+    const image = screen.getByRole('img', { name: /image placeholder/ })
+    expect(image.compareDocumentPosition(tip)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
+    expect(tip.compareDocumentPosition(setButton(1))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
+  })
+
   it('ignores the second tap of a double tap on done', () => {
     render(<Harness />)
     done()

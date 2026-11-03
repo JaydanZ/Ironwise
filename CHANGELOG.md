@@ -4,6 +4,18 @@ Features added to, changed in, or removed from Ironwise, newest first.
 
 ## 2026-11-02
 
+**Changed**: Mobile workout session layout
+
+- **What**: On phones, only the set rows scroll now, so adding sets no longer pushes the controls out of view, and a newly added set scrolls into view. On short screens the image shrinks first, then the list, down to one visible row. The exercise tip moved up, between the image and the sets.
+- **What changed**: `MobileSetList` sizes and scrolls its own rows and no longer renders the tip, `MobileSession` renders the tip and lays out the middle section as a column, and `ExerciseImage` can shrink to a smaller minimum height.
+- **What it affects**: `/workout` under 800px. Desktop, the API, drafts and stored workouts are unchanged.
+
+**Changed**: Mobile workout session font
+
+- **What**: The phone workout session now uses the Inter font, including its exercise list and finish-early dialog.
+- **What changed**: `frontend/index.html` loads Inter from Google Fonts, and `tailwind.config.mjs` adds a `font-inter` class, used by `MobileSession`, `ExerciseSwitcher` and, on mobile only, the finish-early dialog in `WorkoutSession`. `MobileSession` and `SetLogPanel` drop `font-display`.
+- **What it affects**: `/workout` under 800px. Desktop, the completion screen and the rest of the app keep their current fonts, though every page now loads the Inter stylesheet.
+
 **Changed**: Mobile workout session
 
 - **What**: On phones, a workout session now shows one exercise at a time. The current exercise sits at the top with the next one in grey beside it, and pressing and holding the grey text lists every exercise to jump to. Sets appear below an image slot with the current set outlined in lime. A panel at the bottom logs weight and reps with steppers and a done button, then moves to the next set or exercise automatically. Tapping a logged set lets you edit or clear it.

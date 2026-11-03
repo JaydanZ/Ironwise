@@ -103,7 +103,7 @@ export const MobileSession = ({
   }
 
   return (
-    <div className="fixed inset-x-0 top-0 z-40 flex h-dvh flex-col bg-app-colors-500">
+    <div className="fixed inset-x-0 top-0 z-40 flex h-dvh flex-col bg-app-colors-500 font-inter">
       <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)] items-center gap-2 border-b border-neutral-800 px-4 pb-2 pt-[max(env(safe-area-inset-top),0.5rem)]">
         <Link
           to="/training"
@@ -112,7 +112,7 @@ export const MobileSession = ({
         >
           <ArrowLeft aria-hidden className="size-5" />
         </Link>
-        <h1 className="line-clamp-2 text-center font-display text-lg font-bold leading-tight text-neutral-50">
+        <h1 className="line-clamp-2 text-center text-lg font-bold leading-tight text-neutral-50">
           {exercise.name}
         </h1>
         <ExerciseSwitcher
@@ -132,9 +132,14 @@ export const MobileSession = ({
 
       <div
         key={exerciseIndex}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 duration-200 animate-in fade-in slide-in-from-right-4 motion-reduce:animate-none"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 py-4 duration-200 animate-in fade-in slide-in-from-right-4 motion-reduce:animate-none"
       >
         <ExerciseImage name={exercise.name} />
+        {exercise.exercise_tip && (
+          <p className="mt-3 shrink-0 text-sm leading-relaxed text-neutral-400">
+            {exercise.exercise_tip}
+          </p>
+        )}
         <MobileSetList
           exercise={exercise}
           sets={sets}

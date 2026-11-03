@@ -27,7 +27,7 @@ interface SetLogPanelProps {
 }
 
 const valueInputClass =
-  'h-12 w-full min-w-0 bg-transparent text-center font-display text-4xl font-bold tabular-nums text-app-colors-300 outline-none placeholder:text-neutral-600 focus-visible:underline focus-visible:decoration-2 focus-visible:underline-offset-4'
+  'h-12 w-full min-w-0 bg-transparent text-center text-4xl font-bold tabular-nums text-app-colors-300 outline-none placeholder:text-neutral-600 focus-visible:underline focus-visible:decoration-2 focus-visible:underline-offset-4'
 
 const stepperClass =
   'inline-flex h-12 min-w-0 flex-1 items-center justify-center rounded-full bg-neutral-800 text-neutral-100 outline-none transition-[transform,background-color] duration-150 ease-out-strong hover:bg-neutral-700 focus-visible:ring-1 focus-visible:ring-app-colors-300 active:scale-[0.94] motion-reduce:active:scale-100 [&_svg]:size-5'

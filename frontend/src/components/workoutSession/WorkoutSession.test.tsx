@@ -72,6 +72,23 @@ describe('WorkoutSession layouts', () => {
     expect(screen.queryByRole('button', { name: 'Mark set done' })).toBeNull()
   })
 
+  it('sets the portalled finish-early dialog in Inter on mobile', () => {
+    window.innerWidth = 390
+    const plan = {
+      ...workout,
+      exercises: [{ name: 'Pull Up', sets: 2, reps: 10 }]
+    }
+    render(<WorkoutSession programId="p1" programName="Plan" workout={plan} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Mark set done' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Finish early' }))
+    expect(screen.getByRole('dialog').classList).toContain('font-inter')
+  })
+
+  it('leaves the desktop layout out of Inter', () => {
+    renderAt(800)
+    expect(document.querySelector('.font-inter')).toBeNull()
+  })
+
   it('submits sets logged on mobile with a blank weight as null', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.useFakeTimers({ toFake: ['Date'] })

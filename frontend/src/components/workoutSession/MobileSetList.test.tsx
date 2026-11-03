@@ -32,6 +32,45 @@ describe('MobileSetList', () => {
 
   afterEach(cleanup)
 
+  it('scrolls only the set rows, keeping the controls outside the list', () => {
+    render(<MobileSetList {...props()} />)
+    const list = screen.getByRole('list')
+    expect(list.classList).toContain('overflow-y-auto')
+    const add = screen.getByRole('button', { name: /^Add a set/ })
+    expect(list.contains(add)).toBe(false)
+    expect(list.contains(screen.getByRole('textbox'))).toBe(false)
+  })
+
+  it('sizes the list so extra sets scroll instead of taking more space', () => {
+    const entry = { reps: '', weight: '', notes: '' }
+    const { rerender } = render(
+      <MobileSetList {...props({ sets: [entry], selectedSet: 0 })} />
+    )
+    const style = () => screen.getByRole('list').style
+    const oneRow = style().maxHeight
+    expect(style().minHeight).toBe(oneRow)
+    rerender(<MobileSetList {...props({ sets: Array(3).fill(entry) })} />)
+    const threeRows = style().flexBasis
+    rerender(<MobileSetList {...props({ sets: Array(20).fill(entry) })} />)
+    expect(style().flexBasis).toBe(threeRows)
+    expect(style().minHeight).toBe(oneRow)
+    expect(style().maxHeight).not.toBe(threeRows)
+  })
+
+  it('scrolls a newly added set into view, but not when one is removed', () => {
+    const entry = { reps: '', weight: '', notes: '' }
+    const { rerender } = render(
+      <MobileSetList {...props({ sets: [entry, entry] })} />
+    )
+    const list = screen.getByRole('list')
+    Object.defineProperty(list, 'scrollHeight', { value: 900 })
+    rerender(<MobileSetList {...props({ sets: [entry, entry, entry] })} />)
+    expect(list.scrollTop).toBe(900)
+    list.scrollTop = 40
+    rerender(<MobileSetList {...props({ sets: [entry, entry] })} />)
+    expect(list.scrollTop).toBe(40)
+  })
+
   it('shows logged values and target reps', () => {
     render(<MobileSetList {...props()} />)
     expect(screen.getByText('135 lb × 8')).toBeTruthy()

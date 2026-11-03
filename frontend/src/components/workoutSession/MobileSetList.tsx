@@ -31,6 +31,10 @@ interface MobileSetListProps {
 const loggedText = (entry: SetEntry, unit: WeightUnit) =>
   entry.weight ? `${entry.weight} ${unit} × ${entry.reps}` : `${entry.reps} reps`
 
+// N rows at min-h-12 with gap-2, plus the list's 1px padding on each side
+const rowsHeight = (rows: number) =>
+  `calc(${rows * 3 + (rows - 1) * 0.5}rem + 2px)`
+
 export const MobileSetList = ({
   exercise,
   sets,
@@ -44,14 +48,31 @@ export const MobileSetList = ({
   onClearSet
 }: MobileSetListProps) => {
   const selectedRow = useRef<HTMLButtonElement>(null)
+  const list = useRef<HTMLOListElement>(null)
+  const previousSetCount = useRef(sets.length)
 
   useEffect(() => {
     selectedRow.current?.scrollIntoView({ block: 'nearest' })
   }, [selectedSet])
 
+  useEffect(() => {
+    if (sets.length > previousSetCount.current && list.current)
+      list.current.scrollTop = list.current.scrollHeight
+    previousSetCount.current = sets.length
+  }, [sets.length])
+
   return (
-    <div className="mt-4">
-      <ol className="flex flex-col gap-2">
+    <div className="contents">
+      {/* Asks for three rows and grows into spare room, so extra sets scroll instead of taking space */}
+      <ol
+        ref={list}
+        style={{
+          flexBasis: rowsHeight(Math.min(sets.length, 3)),
+          minHeight: rowsHeight(1),
+          maxHeight: rowsHeight(sets.length)
+        }}
+        className="mt-4 flex grow flex-col gap-2 overflow-y-auto overscroll-contain p-px"
+      >
         {sets.map((entry, index) => {
           const setNumber = index + 1
           const selected = index === selectedSet
@@ -104,7 +125,7 @@ export const MobileSetList = ({
         })}
       </ol>
 
-      <div className="flex items-center justify-end gap-2 pt-3">
+      <div className="flex shrink-0 items-center justify-end gap-2 pt-3">
         {selectedSet !== null && isSetComplete(sets[selectedSet]) && (
           <button
             type="button"
@@ -152,14 +173,8 @@ export const MobileSetList = ({
           placeholder={`Note for set ${selectedSet + 1}`}
           value={sets[selectedSet].notes}
           onChange={(event) => onNoteChange(selectedSet, event.target.value)}
-          className="mt-2 h-11 w-full rounded-md border border-neutral-800 bg-neutral-900/70 px-3 text-base text-neutral-50 outline-none transition-[border-color,background-color] duration-150 ease-out placeholder:text-neutral-500 focus:border-app-colors-300/70 focus:bg-neutral-900"
+          className="mt-2 h-11 w-full shrink-0 rounded-md border border-neutral-800 bg-neutral-900/70 px-3 text-base text-neutral-50 outline-none transition-[border-color,background-color] duration-150 ease-out placeholder:text-neutral-500 focus:border-app-colors-300/70 focus:bg-neutral-900"
         />
-      )}
-
-      {exercise.exercise_tip && (
-        <p className="mt-4 text-sm leading-relaxed text-neutral-400">
-          {exercise.exercise_tip}
-        </p>
       )}
     </div>
   )

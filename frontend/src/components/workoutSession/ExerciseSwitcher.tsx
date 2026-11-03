@@ -118,7 +118,7 @@ export const ExerciseSwitcher = ({
           if (openedByTouch.current) event.preventDefault()
           openedByTouch.current = false
         }}
-        className="max-h-[60dvh] w-[min(18rem,calc(100vw-2rem))] border-neutral-800 bg-[#141414] text-neutral-100"
+        className="max-h-[60dvh] w-[min(18rem,calc(100vw-2rem))] border-neutral-800 bg-[#141414] font-inter text-neutral-100"
       >
         {exercises.map((exercise, index) => {
           const sets = entries[index]

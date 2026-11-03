@@ -70,6 +70,12 @@ describe('ExerciseSwitcher', () => {
     expect(screen.getByRole('menu')).toBeTruthy()
   })
 
+  it('sets the portalled list in Inter', () => {
+    setup()
+    hold()
+    expect(screen.getByRole('menu').classList).toContain('font-inter')
+  })
+
   it('does not open when released early', () => {
     setup()
     fireEvent.pointerDown(control(), { clientX: 0, clientY: 0 })

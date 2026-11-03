@@ -13,6 +13,7 @@ import {
   useSubmitWorkoutMutation
 } from '@/services/protectedRoutesAPI'
 import useIsMobile from '@/hooks/useIsMobile'
+import { cn } from '@/lib/utils'
 import { Accordion } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import {
@@ -120,7 +121,12 @@ export const WorkoutSession = ({
 
   const finishEarlyDialog = (
     <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-      <DialogContent className="w-[calc(100%-2rem)] max-w-md rounded-lg border-neutral-800 bg-[#141414]">
+      <DialogContent
+        className={cn(
+          'w-[calc(100%-2rem)] max-w-md rounded-lg border-neutral-800 bg-[#141414]',
+          isMobile && 'font-inter'
+        )}
+      >
         <DialogHeader className="text-left">
           <DialogTitle className="text-neutral-50">
             Finish with {progress.completedSets} of {progress.totalSets} sets?

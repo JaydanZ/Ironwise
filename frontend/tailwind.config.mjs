@@ -61,6 +61,10 @@ export default {
   			}
   		},
   		fontFamily: {
+  			inter: [
+  				'Inter',
+  				'sans-serif'
+  			],
   			display: [
   				'"Roboto Condensed"',
   				'Roboto',
