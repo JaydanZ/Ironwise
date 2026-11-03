@@ -2,6 +2,14 @@
 
 Features added to, changed in, or removed from Ironwise, newest first.
 
+## 2026-11-03
+
+**Added**: Swipe between exercises in the mobile workout session
+
+- **What**: On phones, you can swipe left for the next exercise and right for the previous one, moving through the workout in list order. At the first and last exercise, the content stays still when you swipe towards the end of the list.
+- **What changed**: `MobileSession` makes the area with the image, tip and set list draggable with `motion`, and `sessionNavigation.ts` adds `swipeTarget` and `startsInSwipeArea` to decide when a drag counts as a swipe. A new exercise now slides in from the left when it's earlier in the list.
+- **What it affects**: `/workout` under 800px, including going to an earlier exercise from the exercise list or undo, which now slides in from the left. The logging panel, header, note field and screen edges don't start a swipe. Changing exercise still resets weight or reps you adjusted but didn't log. With reduced motion turned on, a swipe changes exercise without the content moving. Desktop, the API and stored workouts are unchanged.
+
 ## 2026-11-02
 
 **Changed**: Mobile workout loading screen

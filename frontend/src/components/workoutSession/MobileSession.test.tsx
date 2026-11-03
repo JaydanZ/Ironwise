@@ -1,7 +1,14 @@
 // @vitest-environment happy-dom
 import { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  createEvent,
+  fireEvent,
+  render,
+  screen
+} from '@testing-library/react'
 import { Workout } from '@/types/programCreation'
 import { useWorkoutSession } from '@/hooks/useWorkoutSession'
 import { Toaster } from '@/components/ui/toaster'
@@ -417,6 +424,114 @@ describe('MobileSession', () => {
     )
 
     expect(undoButton()).toBeNull()
+  })
+
+  const swipeFrom = async (target: Element, fromX: number, toX: number) => {
+    // happy-dom drops pageX from the event init, and Motion measures drags with it
+    const firePointer = (
+      type: 'pointerDown' | 'pointerMove' | 'pointerUp',
+      node: Element | Window,
+      clientX: number
+    ) => {
+      const event = createEvent[type](node, {
+        clientX,
+        clientY: 300,
+        pointerType: 'touch',
+        isPrimary: true,
+        button: 0
+      })
+      Object.defineProperty(event, 'pageX', { value: clientX })
+      Object.defineProperty(event, 'pageY', { value: 300 })
+      fireEvent(node, event)
+    }
+    const nextFrame = () =>
+      act(
+        () => new Promise<void>((done) => requestAnimationFrame(() => done()))
+      )
+    firePointer('pointerDown', target, fromX)
+    await nextFrame()
+    for (const clientX of [fromX + (toX - fromX) / 2, toX]) {
+      firePointer('pointerMove', window, clientX)
+      await nextFrame()
+    }
+    const transformWhileDragging =
+      target.closest<HTMLElement>('[style*="transform"]')?.style.transform ?? ''
+    firePointer('pointerUp', window, toX)
+    await nextFrame()
+    return transformWhileDragging
+  }
+  const image = () => screen.getByRole('img', { name: /image placeholder/ })
+
+  it('goes to the next exercise on a swipe left', async () => {
+    render(<Harness />)
+    await swipeFrom(image(), 300, 50)
+    expect(heading()).toBe('Pull Up')
+  })
+
+  it('goes back on a swipe right, even past a finished exercise', async () => {
+    render(<Harness />)
+    done()
+    done()
+    expect(heading()).toBe('Pull Up')
+    await swipeFrom(image(), 50, 300)
+    expect(heading()).toBe('Bench Press')
+    expect(setButton(1).getAttribute('aria-label')).toContain('logged')
+  })
+
+  it('stays on the first exercise when swiping right', async () => {
+    render(<Harness />)
+    await swipeFrom(image(), 50, 300)
+    expect(screen.getByText('Set 1 of 2')).toBeTruthy()
+  })
+
+  it('moves the content with the finger when there is an exercise that way', async () => {
+    render(<Harness />)
+    expect(await swipeFrom(image(), 300, 200)).toContain('translateX')
+  })
+
+  it('keeps the content still when there is no exercise that way', async () => {
+    render(<Harness />)
+    expect(await swipeFrom(image(), 50, 300)).not.toContain('translateX')
+  })
+
+  it('leaves the logging panel out of the swipe area', async () => {
+    render(<Harness />)
+    await swipeFrom(doneButton(), 300, 50)
+    expect(screen.getByText('Set 1 of 2')).toBeTruthy()
+  })
+
+  it('does not swipe from the note field', async () => {
+    render(<Harness />)
+    await swipeFrom(screen.getByLabelText('Set 1 notes'), 300, 50)
+    expect(screen.getByText('Set 1 of 2')).toBeTruthy()
+  })
+
+  it('does not swipe from the screen edge', async () => {
+    render(<Harness />)
+    await swipeFrom(image(), window.innerWidth - 5, 50)
+    expect(screen.getByText('Set 1 of 2')).toBeTruthy()
+  })
+
+  it('slides a later exercise in from the right', () => {
+    render(<Harness />)
+    done()
+    done()
+    expect(image().parentElement?.className).toContain('slide-in-from-right')
+  })
+
+  it('slides an earlier exercise in from the left', () => {
+    render(
+      <>
+        <Harness />
+        <Toaster />
+      </>
+    )
+    removeSet(2)
+    done()
+    expect(heading()).toBe('Pull Up')
+    fireEvent.click(undoButton() as HTMLElement)
+    expect(heading()).toBe('Bench Press')
+    expect(image().parentElement?.className).toContain('slide-in-from-left')
   })
 
   it('carries the logged values to the next set', () => {

@@ -15,6 +15,11 @@ const MAX_REPS = 999
 
 const WEIGHT_STEP: Record<WeightUnit, number> = { lb: 5, kg: 2.5 }
 
+const SWIPE_DISTANCE_RATIO = 0.2
+const SWIPE_VELOCITY = 400
+const SWIPE_MIN_FLICK_PX = 16
+const SWIPE_EDGE_PX = 24
+
 export const firstIncompleteExercise = (entries: SetEntry[][]): number => {
   const index = entries.findIndex((sets) => !isExerciseComplete(sets))
   return index === -1 ? 0 : index
@@ -57,6 +62,31 @@ export const exerciseAfterDone = (
   if (!isExerciseComplete(updated[exercise])) return exercise
   return nextExerciseIndex(updated, exercise) ?? exercise
 }
+
+interface SwipeGesture {
+  offset: { x: number; y: number }
+  velocity: { x: number; y: number }
+  width: number
+}
+
+export const swipeTarget = (
+  current: number,
+  count: number,
+  { offset, velocity, width }: SwipeGesture
+): number | null => {
+  const distance = Math.abs(offset.x)
+  if (distance <= Math.abs(offset.y)) return null
+  const flicked =
+    distance >= SWIPE_MIN_FLICK_PX &&
+    Math.abs(velocity.x) > SWIPE_VELOCITY &&
+    Math.sign(velocity.x) === Math.sign(offset.x)
+  if (distance <= width * SWIPE_DISTANCE_RATIO && !flicked) return null
+  const target = offset.x < 0 ? current + 1 : current - 1
+  return target >= 0 && target < count ? target : null
+}
+
+export const startsInSwipeArea = (x: number, viewportWidth: number): boolean =>
+  x >= SWIPE_EDGE_PX && x <= viewportWidth - SWIPE_EDGE_PX
 
 interface SeedValuesArgs {
   sets: SetEntry[]
