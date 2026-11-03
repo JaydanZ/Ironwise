@@ -130,7 +130,7 @@ export const MobileSession = ({
   }
 
   const swipeElastic = (hasExerciseThatWay: boolean) =>
-    hasExerciseThatWay && !prefersReducedMotion ? 0.6 : 0
+    hasExerciseThatWay && !prefersReducedMotion ? 1 : 0
 
   const handleRemoveSet = (set: number) => {
     onRemoveSet(exerciseIndex, set)
@@ -215,7 +215,6 @@ export const MobileSession = ({
           left: swipeElastic(exerciseIndex < workout.exercises.length - 1),
           right: swipeElastic(exerciseIndex > 0)
         }}
-        dragDirectionLock
         onPointerDownCapture={(event) => {
           didSwipe.current = false
           const startsSwipe =

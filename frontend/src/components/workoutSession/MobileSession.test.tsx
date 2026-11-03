@@ -426,22 +426,28 @@ describe('MobileSession', () => {
     expect(undoButton()).toBeNull()
   })
 
-  const swipeFrom = async (target: Element, fromX: number, toX: number) => {
+  const swipeFrom = async (
+    target: Element,
+    fromX: number,
+    toX: number,
+    driftY = 0
+  ) => {
     // happy-dom drops pageX from the event init, and Motion measures drags with it
     const firePointer = (
       type: 'pointerDown' | 'pointerMove' | 'pointerUp',
       node: Element | Window,
-      clientX: number
+      clientX: number,
+      clientY = 300
     ) => {
       const event = createEvent[type](node, {
         clientX,
-        clientY: 300,
+        clientY,
         pointerType: 'touch',
         isPrimary: true,
         button: 0
       })
       Object.defineProperty(event, 'pageX', { value: clientX })
-      Object.defineProperty(event, 'pageY', { value: 300 })
+      Object.defineProperty(event, 'pageY', { value: clientY })
       fireEvent(node, event)
     }
     const nextFrame = () =>
@@ -450,8 +456,13 @@ describe('MobileSession', () => {
       )
     firePointer('pointerDown', target, fromX)
     await nextFrame()
-    for (const clientX of [fromX + (toX - fromX) / 2, toX]) {
-      firePointer('pointerMove', window, clientX)
+    for (const progress of [0.5, 1]) {
+      firePointer(
+        'pointerMove',
+        window,
+        fromX + (toX - fromX) * progress,
+        300 + driftY * progress
+      )
       await nextFrame()
     }
     const transformWhileDragging =
@@ -486,7 +497,17 @@ describe('MobileSession', () => {
 
   it('moves the content with the finger when there is an exercise that way', async () => {
     render(<Harness />)
-    expect(await swipeFrom(image(), 300, 200)).toContain('translateX')
+    expect(await swipeFrom(image(), 300, 200)).toBe('translateX(-100px)')
+  })
+
+  it('follows a fast swipe that starts with some vertical drift', async () => {
+    render(<Harness />)
+    expect(await swipeFrom(image(), 300, 200, 40)).toBe('translateX(-100px)')
+  })
+
+  it('stops the browser claiming horizontal swipes on the set list', () => {
+    render(<Harness />)
+    expect(setButton(1).closest('ol')?.classList).toContain('touch-pan-y')
   })
 
   it('keeps the content still when there is no exercise that way', async () => {

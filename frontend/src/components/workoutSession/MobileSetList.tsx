@@ -111,7 +111,8 @@ export const MobileSetList = ({
           maskImage: EDGE_FADE_MASK,
           WebkitMaskImage: EDGE_FADE_MASK
         }}
-        className="relative mt-4 flex grow flex-col gap-2 overflow-y-auto overscroll-contain scroll-py-6 p-px [scrollbar-color:#404040_transparent] [scrollbar-width:thin] motion-safe:scroll-smooth"
+        // A scroller ignores its parent's touch-action, so horizontal swipes need this too
+        className="relative mt-4 flex grow touch-pan-y flex-col gap-2 overflow-y-auto overscroll-contain scroll-py-6 p-px [scrollbar-color:#404040_transparent] [scrollbar-width:thin] motion-safe:scroll-smooth"
       >
         <li
           aria-hidden
