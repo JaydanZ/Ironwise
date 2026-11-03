@@ -62,6 +62,7 @@ export const WorkoutSession = ({
     fillSet,
     addSet,
     removeSet,
+    restoreSet,
     setUnit,
     getSubmission,
     clearDraft
@@ -174,6 +175,7 @@ export const WorkoutSession = ({
           onUpdateSet={updateSet}
           onAddSet={addSet}
           onRemoveSet={removeSet}
+          onRestoreSet={restoreSet}
           onUnitChange={setUnit}
           onFinishEarly={() => setConfirmOpen(true)}
           onSubmit={() => handleSubmit(true)}

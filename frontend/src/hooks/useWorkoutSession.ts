@@ -30,7 +30,8 @@ export type SessionAction =
       weight: string
     }
   | { type: 'addSet'; exercise: number }
-  | { type: 'removeSet'; exercise: number }
+  | { type: 'removeSet'; exercise: number; set?: number }
+  | { type: 'restoreSet'; exercise: number; set: number; entry: SetEntry }
   | { type: 'setUnit'; exercise: number; unit: WeightUnit }
 
 const UNIT_KEY = 'ironwise:weight-unit'
@@ -128,7 +129,23 @@ export const sessionReducer = (
         entries: state.entries.map((sets, exerciseIndex) =>
           exerciseIndex !== action.exercise || sets.length <= MIN_SETS
             ? sets
-            : sets.slice(0, -1)
+            : sets.filter(
+                (_, setIndex) =>
+                  setIndex !== (action.set ?? sets.length - 1)
+              )
+        )
+      }
+    case 'restoreSet':
+      return {
+        ...state,
+        entries: state.entries.map((sets, exerciseIndex) =>
+          exerciseIndex !== action.exercise || sets.length >= MAX_SETS
+            ? sets
+            : [
+                ...sets.slice(0, action.set),
+                action.entry,
+                ...sets.slice(action.set)
+              ]
         )
       }
     case 'setUnit':
@@ -432,7 +449,14 @@ export const useWorkoutSession = ({
   )
 
   const removeSet = useCallback(
-    (exercise: number) => dispatch({ type: 'removeSet', exercise }),
+    (exercise: number, set?: number) =>
+      dispatch({ type: 'removeSet', exercise, set }),
+    []
+  )
+
+  const restoreSet = useCallback(
+    (exercise: number, set: number, entry: SetEntry) =>
+      dispatch({ type: 'restoreSet', exercise, set, entry }),
     []
   )
 
@@ -460,6 +484,7 @@ export const useWorkoutSession = ({
     fillSet,
     addSet,
     removeSet,
+    restoreSet,
     setUnit,
     getSubmission,
     clearDraft

@@ -4,6 +4,30 @@ Features added to, changed in, or removed from Ironwise, newest first.
 
 ## 2026-11-02
 
+**Changed**: Fading edges on the mobile set list
+
+- **What**: On phones, when the set list scrolls, its rows now fade out at the top and bottom instead of looking cut off. A fade only shows on an edge that has more rows past it.
+- **What changed**: `MobileSetList` applies a CSS mask to the list and sizes each fade from its scroll position.
+- **What it affects**: `/workout` under 800px. Desktop, the API and stored workouts are unchanged.
+
+**Changed**: Sliding set selection in the mobile workout session
+
+- **What**: On phones, the lime outline now slides smoothly from one set to the next when you finish or select a set, and the list scrolls smoothly to keep it in view.
+- **What changed**: `MobileSetList` draws the outline on one shared highlight moved with a CSS `transform` transition, instead of on each row.
+- **What it affects**: `/workout` under 800px. With reduced motion turned on, the outline moves instantly and the list doesn't scroll smoothly. Desktop, the API and stored workouts are unchanged.
+
+**Changed**: Fixed set controls in the mobile workout session
+
+- **What**: On phones, the add set button and note field now stay directly above the logging panel, instead of moving down as sets are added.
+- **What changed**: `MobileSetList` lets the set list fill the spare room.
+- **What it affects**: `/workout` under 800px. Desktop, the API and stored workouts are unchanged.
+
+**Changed**: Removing sets in the mobile workout session
+
+- **What**: On phones, each set row now has its own trash icon that removes that set, instead of one button below the list that only removed the last set. A short message lets you undo the removal.
+- **What changed**: `MobileSetList` renders the remove button in each row, the `removeSet` action in `useWorkoutSession` takes an optional set position, the new `restoreSet` action puts a set back, and `MobileSession` shows the undo toast and keeps the selection on the same set after a removal.
+- **What it affects**: `/workout` under 800px. Later sets renumber after a removal, and their logged values and notes stay with them. Desktop still removes the last set, and the API and stored workouts are unchanged.
+
 **Changed**: Weight units per exercise
 
 - **What**: Each exercise in a workout now has its own kg/lb toggle, and the app remembers your choice for that exercise next time. Before, one unit applied to the whole workout, so switching it also relabelled sets you had already logged.

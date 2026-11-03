@@ -191,6 +191,70 @@ describe('useWorkoutSession helpers', () => {
     expect(state.entries.map((sets) => sets.length)).toEqual([1, 1])
   })
 
+  it('removes a chosen set and keeps the sets around it', () => {
+    let state = sessionReducer(initialState(), { type: 'addSet', exercise: 0 })
+    ;['8', '7', '6'].forEach((value, set) => {
+      state = sessionReducer(state, {
+        type: 'updateSet',
+        exercise: 0,
+        set,
+        field: 'reps',
+        value
+      })
+    })
+    state = sessionReducer(state, { type: 'removeSet', exercise: 0, set: 1 })
+    expect(state.entries[0].map((entry) => entry.reps)).toEqual(['8', '6'])
+  })
+
+  it('never removes the only set, even when it is chosen', () => {
+    const state = sessionReducer(initialState(), {
+      type: 'removeSet',
+      exercise: 1,
+      set: 0
+    })
+    expect(state.entries[1]).toHaveLength(1)
+  })
+
+  it('restores a removed set to its position with its values', () => {
+    const entry = { reps: '7', weight: '100', notes: 'Heavy' }
+    const state = sessionReducer(initialState(), {
+      type: 'restoreSet',
+      exercise: 0,
+      set: 1,
+      entry
+    })
+    expect(state.entries[0]).toEqual([
+      { reps: '', weight: '', notes: '' },
+      entry,
+      { reps: '', weight: '', notes: '' }
+    ])
+  })
+
+  it('restores to the end when the old position no longer exists', () => {
+    const entry = { reps: '7', weight: '', notes: '' }
+    const state = sessionReducer(initialState(), {
+      type: 'restoreSet',
+      exercise: 1,
+      set: 5,
+      entry
+    })
+    expect(state.entries[1][1]).toEqual(entry)
+  })
+
+  it('does not restore a set past the maximum', () => {
+    let state = initialState()
+    for (let i = 0; i < MAX_SETS; i++)
+      state = sessionReducer(state, { type: 'addSet', exercise: 0 })
+    state = sessionReducer(state, {
+      type: 'restoreSet',
+      exercise: 0,
+      set: 0,
+      entry: { reps: '7', weight: '', notes: '' }
+    })
+    expect(state.entries[0]).toHaveLength(MAX_SETS)
+    expect(state.entries[0][0].reps).toBe('')
+  })
+
   it('treats a removed set as no longer required for completion', () => {
     let state = sessionReducer(initialState(), {
       type: 'updateSet',

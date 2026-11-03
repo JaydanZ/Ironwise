@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
 import { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { Workout } from '@/types/programCreation'
 import { useWorkoutSession } from '@/hooks/useWorkoutSession'
+import { Toaster } from '@/components/ui/toaster'
 import { MobileSession } from './MobileSession'
 
 vi.mock('@tanstack/react-router', () => ({
@@ -50,6 +51,7 @@ const Harness = ({ plan = workout }: { plan?: Workout }) => {
       onUpdateSet={session.updateSet}
       onAddSet={session.addSet}
       onRemoveSet={session.removeSet}
+      onRestoreSet={session.restoreSet}
       onUnitChange={session.setUnit}
       onFinishEarly={vi.fn()}
       onSubmit={submit}
@@ -270,6 +272,151 @@ describe('MobileSession', () => {
     fireEvent.click(setButton(2))
     fireEvent.click(screen.getByRole('button', { name: /Remove set 2/ }))
     expect(setButton(1).getAttribute('aria-current')).toBe('true')
+  })
+
+  const threeSets = {
+    ...workout,
+    exercises: [{ name: 'Bench Press', sets: 3, reps: 8 }]
+  }
+  const weightValue = () =>
+    (screen.getByLabelText('Weight in lb') as HTMLInputElement).value
+
+  it('removes the tapped row, not the last one', () => {
+    render(<Harness plan={threeSets} />)
+    done()
+    fireEvent.click(screen.getByRole('button', { name: /Remove set 2/ }))
+    expect(screen.getByText('Set 2 of 2')).toBeTruthy()
+    expect(setButton(1).getAttribute('aria-label')).toContain('logged')
+    expect(setButton(2).getAttribute('aria-label')).not.toContain('logged')
+  })
+
+  it('stays on the selected set when an earlier set is removed', () => {
+    render(<Harness plan={threeSets} />)
+    fireEvent.click(setButton(3))
+    fireEvent.click(screen.getByRole('button', { name: /Remove set 1/ }))
+    expect(setButton(2).getAttribute('aria-current')).toBe('true')
+    expect(screen.getByText('Set 2 of 2')).toBeTruthy()
+  })
+
+  it('stays on the selected set when a later set is removed', () => {
+    render(<Harness plan={threeSets} />)
+    fireEvent.click(setButton(2))
+    fireEvent.click(screen.getByRole('button', { name: /Remove set 3/ }))
+    expect(setButton(2).getAttribute('aria-current')).toBe('true')
+  })
+
+  it('drops the panel values of a removed set', () => {
+    render(<Harness plan={threeSets} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Increase weight' }))
+    done()
+    fireEvent.click(screen.getByRole('button', { name: 'Increase weight' }))
+    expect(weightValue()).toBe('10')
+
+    fireEvent.click(screen.getByRole('button', { name: /Remove set 2/ }))
+
+    expect(screen.getByText('Set 2 of 2')).toBeTruthy()
+    expect(weightValue()).toBe('5')
+  })
+
+  const undoButton = () => screen.queryByRole('button', { name: 'Undo' })
+  const removeSet = (number: number) =>
+    fireEvent.click(
+      screen.getByRole('button', { name: new RegExp(`Remove set ${number}`) })
+    )
+
+  it('offers to undo removing a set', () => {
+    render(
+      <>
+        <Harness plan={threeSets} />
+        <Toaster />
+      </>
+    )
+    removeSet(2)
+    expect(screen.getByText('Set 2 removed')).toBeTruthy()
+    expect(undoButton()).toBeTruthy()
+  })
+
+  it('puts a logged set back with its values and note when undone', () => {
+    render(
+      <>
+        <Harness plan={threeSets} />
+        <Toaster />
+      </>
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Increase weight' }))
+    done()
+    fireEvent.click(setButton(1))
+    fireEvent.change(screen.getByLabelText('Set 1 notes'), {
+      target: { value: 'Heavy' }
+    })
+    removeSet(1)
+    expect(screen.getByText('Set 1 of 2')).toBeTruthy()
+
+    fireEvent.click(undoButton() as HTMLElement)
+
+    expect(setButton(1).getAttribute('aria-label')).toContain('5 lb × 8')
+    expect(setButton(1).getAttribute('aria-label')).toContain('logged')
+    expect(setButton(2).getAttribute('aria-current')).toBe('true')
+    fireEvent.click(setButton(1))
+    expect(
+      (screen.getByLabelText('Set 1 notes') as HTMLInputElement).value
+    ).toBe('Heavy')
+  })
+
+  it('restores a set only once on a double tap of undo', () => {
+    render(
+      <>
+        <Harness plan={threeSets} />
+        <Toaster />
+      </>
+    )
+    removeSet(2)
+    const undo = undoButton() as HTMLElement
+
+    act(() => {
+      undo.click()
+      undo.click()
+    })
+
+    expect(screen.getByText('Set 1 of 3')).toBeTruthy()
+    expect(undoButton()).toBeNull()
+  })
+
+  it('returns to the exercise when a set from another one is restored', () => {
+    render(
+      <>
+        <Harness />
+        <Toaster />
+      </>
+    )
+    removeSet(2)
+    done()
+    expect(heading()).toBe('Pull Up')
+
+    fireEvent.click(undoButton() as HTMLElement)
+
+    expect(heading()).toBe('Bench Press')
+    expect(screen.getByText('Set 2 of 2')).toBeTruthy()
+  })
+
+  it('withdraws the undo when the session closes', () => {
+    const { rerender } = render(
+      <>
+        <Harness plan={threeSets} />
+        <Toaster />
+      </>
+    )
+    removeSet(2)
+    expect(undoButton()).toBeTruthy()
+
+    rerender(
+      <>
+        {null}
+        <Toaster />
+      </>
+    )
+
+    expect(undoButton()).toBeNull()
   })
 
   it('carries the logged values to the next set', () => {
