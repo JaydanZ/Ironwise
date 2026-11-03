@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { ArrowLeft } from 'lucide-react'
 import { Workout } from '@/types/programCreation'
-import { SubmitWorkoutResponse, WeightUnit } from '@/types/workoutSession'
+import { SubmitWorkoutResponse } from '@/types/workoutSession'
 import {
   isExerciseComplete,
   useWorkoutSession
@@ -12,6 +12,8 @@ import {
   useGetPreviousPerformanceQuery,
   useSubmitWorkoutMutation
 } from '@/services/protectedRoutesAPI'
+import useIsMobile from '@/hooks/useIsMobile'
+import { cn } from '@/lib/utils'
 import { Accordion } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +27,7 @@ import {
 } from '@/components/ui/dialog'
 import { panelClass, primaryButtonClass } from '../profile/profileStyles'
 import { ExerciseItem } from './ExerciseItem'
+import { MobileSession } from './MobileSession'
 import { SessionComplete } from './SessionComplete'
 import { SessionSummary, summarizeSession } from './sessionSummary'
 
@@ -36,43 +39,6 @@ interface WorkoutSessionProps {
 
 const ghostButtonClass =
   'h-10 border border-neutral-700 px-4 text-sm font-medium text-neutral-200 transition-[transform,background-color,color] duration-150 ease-out-strong hover:bg-neutral-800/70 hover:text-neutral-50 active:scale-[0.97] disabled:opacity-40'
-
-const UNITS: WeightUnit[] = ['lb', 'kg']
-
-const UnitToggle = ({
-  unit,
-  onChange
-}: {
-  unit: WeightUnit
-  onChange: (unit: WeightUnit) => void
-}) => (
-  <div
-    role="radiogroup"
-    aria-label="Weight unit"
-    className="inline-flex h-9 shrink-0 rounded-md border border-neutral-800 bg-neutral-900/70 p-0.5"
-  >
-    {UNITS.map((option) => {
-      const selected = option === unit
-      return (
-        <button
-          key={option}
-          type="button"
-          role="radio"
-          aria-checked={selected}
-          onClick={() => onChange(option)}
-          className={clsx(
-            'min-w-11 rounded-[5px] px-3 text-sm font-medium outline-none transition-[color,background-color,transform] duration-150 ease-out focus-visible:ring-1 focus-visible:ring-app-colors-300 active:scale-[0.97]',
-            selected
-              ? 'bg-neutral-700/80 text-neutral-50'
-              : 'text-neutral-400 hover:text-neutral-200'
-          )}
-        >
-          {option}
-        </button>
-      )
-    })}
-  </div>
-)
 
 const getErrorMessage = (error: unknown): string => {
   const status = (error as { status?: number | string })?.status
@@ -87,6 +53,7 @@ export const WorkoutSession = ({
   programName,
   workout
 }: WorkoutSessionProps) => {
+  const isMobile = useIsMobile()
   const {
     state,
     performedOn,
@@ -95,6 +62,7 @@ export const WorkoutSession = ({
     fillSet,
     addSet,
     removeSet,
+    restoreSet,
     setUnit,
     getSubmission,
     clearDraft
@@ -128,7 +96,7 @@ export const WorkoutSession = ({
       setConfirmOpen(false)
       setCompleted({
         result: response,
-        summary: summarizeSession(workout, submission, state.unit)
+        summary: summarizeSession(workout, submission)
       })
       window.scrollTo({ top: 0 })
     } catch (error) {
@@ -150,6 +118,71 @@ export const WorkoutSession = ({
 
   const isSubmitting = submitState.isLoading
   const setsLeft = progress.totalSets - progress.completedSets
+
+  const finishEarlyDialog = (
+    <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <DialogContent
+        className={cn(
+          'w-[calc(100%-2rem)] max-w-md rounded-lg border-neutral-800 bg-[#141414]',
+          isMobile && 'font-inter'
+        )}
+      >
+        <DialogHeader className="text-left">
+          <DialogTitle className="text-neutral-50">
+            Finish with {progress.completedSets} of {progress.totalSets} sets?
+          </DialogTitle>
+          <DialogDescription className="text-neutral-400">
+            Only the sets you logged are saved. Skipped sets won&rsquo;t show
+            up as your previous numbers next time.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-0">
+          <DialogClose asChild>
+            <Button
+              variant="ghost"
+              className="h-10 text-neutral-300 hover:bg-neutral-800/70 hover:text-neutral-50"
+            >
+              Keep going
+            </Button>
+          </DialogClose>
+          <Button
+            className={primaryButtonClass}
+            disabled={isSubmitting}
+            onClick={() => handleSubmit(false)}
+          >
+            {isSubmitting ? 'Saving...' : 'Save and finish'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+
+  if (isMobile)
+    return (
+      <>
+        <MobileSession
+          workout={workout}
+          entries={state.entries}
+          units={state.units}
+          previous={previousQuery.data}
+          allComplete={progress.allComplete}
+          completedSets={progress.completedSets}
+          isSubmitting={isSubmitting}
+          errorMessage={
+            submitState.isError ? getErrorMessage(submitState.error) : null
+          }
+          onFill={fillSet}
+          onUpdateSet={updateSet}
+          onAddSet={addSet}
+          onRemoveSet={removeSet}
+          onRestoreSet={restoreSet}
+          onUnitChange={setUnit}
+          onFinishEarly={() => setConfirmOpen(true)}
+          onSubmit={() => handleSubmit(true)}
+        />
+        {finishEarlyDialog}
+      </>
+    )
 
   return (
     <>
@@ -173,7 +206,6 @@ export const WorkoutSession = ({
               {programName}
             </p>
           </div>
-          <UnitToggle unit={state.unit} onChange={setUnit} />
         </div>
       </header>
 
@@ -208,13 +240,14 @@ export const WorkoutSession = ({
               exercise={exercise}
               exerciseIndex={index}
               sets={state.entries[index]}
-              unit={state.unit}
+              unit={state.units[index]}
               previous={previousQuery.data?.[exercise.name]}
               previousLoading={previousQuery.isLoading}
               onChange={updateSet}
               onFill={fillSet}
               onAddSet={addSet}
               onRemoveSet={removeSet}
+              onUnitChange={setUnit}
             />
           ))}
         </Accordion>
@@ -254,36 +287,7 @@ export const WorkoutSession = ({
         </div>
       </div>
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="w-[calc(100%-2rem)] max-w-md rounded-lg border-neutral-800 bg-[#141414]">
-          <DialogHeader className="text-left">
-            <DialogTitle className="text-neutral-50">
-              Finish with {progress.completedSets} of {progress.totalSets} sets?
-            </DialogTitle>
-            <DialogDescription className="text-neutral-400">
-              Only the sets you logged are saved. Skipped sets won&rsquo;t show
-              up as your previous numbers next time.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-0">
-            <DialogClose asChild>
-              <Button
-                variant="ghost"
-                className="h-10 text-neutral-300 hover:bg-neutral-800/70 hover:text-neutral-50"
-              >
-                Keep going
-              </Button>
-            </DialogClose>
-            <Button
-              className={primaryButtonClass}
-              disabled={isSubmitting}
-              onClick={() => handleSubmit(false)}
-            >
-              {isSubmitting ? 'Saving...' : 'Save and finish'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {finishEarlyDialog}
     </>
   )
 }

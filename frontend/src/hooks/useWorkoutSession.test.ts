@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
 import { Workout } from '@/types/programCreation'
 import {
   buildSubmission,
@@ -10,9 +11,11 @@ import {
   parseDraft,
   pruneDrafts,
   restoreEntries,
+  restoreUnits,
   sanitizeWeight,
   sessionReducer,
   SessionState,
+  useWorkoutSession,
   WorkoutDraft,
   workoutDraftKey
 } from './useWorkoutSession'
@@ -28,7 +31,7 @@ const workout: Workout = {
 
 const initialState = (): SessionState => ({
   entries: createEntries(workout.exercises),
-  unit: 'lb'
+  units: ['lb', 'lb']
 })
 
 describe('useWorkoutSession helpers', () => {
@@ -87,7 +90,7 @@ describe('useWorkoutSession helpers', () => {
       field: 'notes',
       value: '  felt easy  '
     })
-    state = sessionReducer(state, { type: 'setUnit', unit: 'kg' })
+    state = sessionReducer(state, { type: 'setUnit', exercise: 0, unit: 'kg' })
 
     const submission = buildSubmission({
       programId: 'program-1',
@@ -110,6 +113,52 @@ describe('useWorkoutSession helpers', () => {
     ])
     expect(submission.is_completed).toBe(false)
     expect(submission.day).toBe('Monday')
+  })
+
+  it('changes the unit of only the targeted exercise', () => {
+    const state = sessionReducer(initialState(), {
+      type: 'setUnit',
+      exercise: 1,
+      unit: 'kg'
+    })
+    expect(state.units).toEqual(['lb', 'kg'])
+  })
+
+  it('submits each exercise in its own unit without changing the numbers', () => {
+    let state = sessionReducer(initialState(), {
+      type: 'fillSet',
+      exercise: 0,
+      set: 0,
+      reps: '8',
+      weight: '225'
+    })
+    state = sessionReducer(state, {
+      type: 'fillSet',
+      exercise: 1,
+      set: 0,
+      reps: '10',
+      weight: '20'
+    })
+    state = sessionReducer(state, { type: 'setUnit', exercise: 1, unit: 'kg' })
+
+    const { sets } = buildSubmission({
+      programId: 'p1',
+      workout,
+      state,
+      performedOn: '2026-11-02',
+      isCompleted: true
+    })
+
+    expect(
+      sets.map(({ exercise_name, weight, weight_unit }) => ({
+        exercise_name,
+        weight,
+        weight_unit
+      }))
+    ).toEqual([
+      { exercise_name: 'Bench Press', weight: 225, weight_unit: 'lb' },
+      { exercise_name: 'Pull Up', weight: 20, weight_unit: 'kg' }
+    ])
   })
 
   it('adds an empty set to only the targeted exercise', () => {
@@ -140,6 +189,70 @@ describe('useWorkoutSession helpers', () => {
     state = sessionReducer(state, { type: 'removeSet', exercise: 0 })
     state = sessionReducer(state, { type: 'removeSet', exercise: 1 })
     expect(state.entries.map((sets) => sets.length)).toEqual([1, 1])
+  })
+
+  it('removes a chosen set and keeps the sets around it', () => {
+    let state = sessionReducer(initialState(), { type: 'addSet', exercise: 0 })
+    ;['8', '7', '6'].forEach((value, set) => {
+      state = sessionReducer(state, {
+        type: 'updateSet',
+        exercise: 0,
+        set,
+        field: 'reps',
+        value
+      })
+    })
+    state = sessionReducer(state, { type: 'removeSet', exercise: 0, set: 1 })
+    expect(state.entries[0].map((entry) => entry.reps)).toEqual(['8', '6'])
+  })
+
+  it('never removes the only set, even when it is chosen', () => {
+    const state = sessionReducer(initialState(), {
+      type: 'removeSet',
+      exercise: 1,
+      set: 0
+    })
+    expect(state.entries[1]).toHaveLength(1)
+  })
+
+  it('restores a removed set to its position with its values', () => {
+    const entry = { reps: '7', weight: '100', notes: 'Heavy' }
+    const state = sessionReducer(initialState(), {
+      type: 'restoreSet',
+      exercise: 0,
+      set: 1,
+      entry
+    })
+    expect(state.entries[0]).toEqual([
+      { reps: '', weight: '', notes: '' },
+      entry,
+      { reps: '', weight: '', notes: '' }
+    ])
+  })
+
+  it('restores to the end when the old position no longer exists', () => {
+    const entry = { reps: '7', weight: '', notes: '' }
+    const state = sessionReducer(initialState(), {
+      type: 'restoreSet',
+      exercise: 1,
+      set: 5,
+      entry
+    })
+    expect(state.entries[1][1]).toEqual(entry)
+  })
+
+  it('does not restore a set past the maximum', () => {
+    let state = initialState()
+    for (let i = 0; i < MAX_SETS; i++)
+      state = sessionReducer(state, { type: 'addSet', exercise: 0 })
+    state = sessionReducer(state, {
+      type: 'restoreSet',
+      exercise: 0,
+      set: 0,
+      entry: { reps: '7', weight: '', notes: '' }
+    })
+    expect(state.entries[0]).toHaveLength(MAX_SETS)
+    expect(state.entries[0][0].reps).toBe('')
   })
 
   it('treats a removed set as no longer required for completion', () => {
@@ -248,6 +361,35 @@ describe('workout drafts', () => {
     expect(entries.map((sets) => sets[0].reps)).toEqual(['10', '7'])
   })
 
+  it('keeps a valid saved unit and drops an invalid one', () => {
+    const withUnits = {
+      ...draft,
+      exercises: [
+        { ...draft.exercises[0], unit: 'kg' },
+        { ...draft.exercises[1], unit: 'stone' }
+      ]
+    }
+    const parsed = parseDraft(JSON.stringify(withUnits), now)
+    expect(parsed?.exercises.map((exercise) => exercise.unit)).toEqual([
+      'kg',
+      undefined
+    ])
+  })
+
+  it('matches saved units by name and falls back for drafts without one', () => {
+    const saved = [
+      { ...draft.exercises[0], unit: 'kg' as const },
+      draft.exercises[1]
+    ]
+    const edited = [
+      { name: 'Pull Up', sets: 1, reps: 10 },
+      { name: 'Dip', sets: 3, reps: 12 },
+      { name: 'bench press', sets: 4, reps: 8 }
+    ]
+    const fallback = (name: string) => (name === 'Dip' ? 'kg' : 'lb')
+    expect(restoreUnits(edited, saved, fallback)).toEqual(['lb', 'kg', 'kg'])
+  })
+
   describe('pruneDrafts', () => {
     beforeEach(() => localStorage.clear())
 
@@ -270,5 +412,59 @@ describe('workout drafts', () => {
       expect(localStorage.getItem(legacyKey)).toBeNull()
       expect(localStorage.getItem('ironwise:weight-unit')).toBe('kg')
     })
+  })
+})
+
+describe('useWorkoutSession units', () => {
+  const start = () =>
+    renderHook(() => useWorkoutSession({ programId: 'p1', workout }))
+
+  beforeEach(() => localStorage.clear())
+
+  it('starts every exercise from the saved preference', () => {
+    localStorage.setItem('ironwise:weight-unit', 'kg')
+    expect(start().result.current.state.units).toEqual(['kg', 'kg'])
+  })
+
+  it('defaults to pounds', () => {
+    expect(start().result.current.state.units).toEqual(['lb', 'lb'])
+  })
+
+  it('remembers an exercise unit for the next workout without changing the rest', () => {
+    const { result, unmount } = start()
+    act(() => result.current.setUnit(1, 'kg'))
+    unmount()
+
+    expect(start().result.current.state.units).toEqual(['lb', 'kg'])
+    expect(localStorage.getItem('ironwise:weight-unit')).toBeNull()
+  })
+
+  it('ignores corrupt remembered units', () => {
+    localStorage.setItem('ironwise:exercise-units', '{"pull up":"stone"')
+    expect(start().result.current.state.units).toEqual(['lb', 'lb'])
+    localStorage.setItem('ironwise:exercise-units', '{"pull up":"stone"}')
+    expect(start().result.current.state.units).toEqual(['lb', 'lb'])
+  })
+
+  it('is not confused by an exercise named like an object key', () => {
+    const plan = {
+      ...workout,
+      exercises: [{ name: 'constructor', sets: 1, reps: 1 }]
+    }
+    localStorage.setItem('ironwise:exercise-units', '{}')
+    const { result } = renderHook(() =>
+      useWorkoutSession({ programId: 'p1', workout: plan })
+    )
+    expect(result.current.state.units).toEqual(['lb'])
+  })
+
+  it('restores the units of a refreshed session', () => {
+    const { result, unmount } = start()
+    act(() => result.current.setUnit(0, 'kg'))
+    act(() => result.current.fillSet(0, 0, '8', '100'))
+    unmount()
+    localStorage.removeItem('ironwise:exercise-units')
+
+    expect(start().result.current.state.units).toEqual(['kg', 'lb'])
   })
 })

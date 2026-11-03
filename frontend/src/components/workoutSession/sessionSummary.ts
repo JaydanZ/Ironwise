@@ -1,5 +1,5 @@
 import { Workout } from '@/types/programCreation'
-import { SetLog, WeightUnit, WorkoutSubmission } from '@/types/workoutSession'
+import { SetLog, WorkoutSubmission } from '@/types/workoutSession'
 
 export interface ExerciseSummary {
   name: string
@@ -10,8 +10,6 @@ export interface ExerciseSummary {
 export interface SessionSummary {
   exercises: ExerciseSummary[]
   totalReps: number
-  volume: number
-  unit: WeightUnit
   isCompleted: boolean
 }
 
@@ -24,8 +22,7 @@ const isBetterSet = (candidate: SetLog, current: SetLog): boolean => {
 
 export const summarizeSession = (
   workout: Workout,
-  submission: WorkoutSubmission,
-  unit: WeightUnit
+  submission: WorkoutSubmission
 ): SessionSummary => {
   const exercises = workout.exercises.map((exercise, index) => {
     const sets = submission.sets.filter((set) => set.exercise_order === index)
@@ -39,11 +36,6 @@ export const summarizeSession = (
   return {
     exercises,
     totalReps: submission.sets.reduce((sum, set) => sum + set.reps, 0),
-    volume: submission.sets.reduce(
-      (sum, set) => sum + (set.weight ?? 0) * set.reps,
-      0
-    ),
-    unit,
     isCompleted: submission.is_completed
   }
 }

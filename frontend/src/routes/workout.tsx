@@ -6,12 +6,12 @@ import {
   useGetProfileDataQuery,
   useGetProgramQuery
 } from '@/services/protectedRoutesAPI'
+import { SessionSkeleton } from '@/components/workoutSession/SessionSkeleton'
 import { WorkoutSession } from '@/components/workoutSession/WorkoutSession'
 import { Button } from '@/components/ui/button'
 import {
   panelClass,
-  primaryButtonClass,
-  skeletonClass
+  primaryButtonClass
 } from '@/components/profile/profileStyles'
 
 interface WorkoutSearch {
@@ -28,31 +28,6 @@ export const Route = createFileRoute('/workout')({
 })
 
 const normalize = (value: string) => value.trim().toLowerCase()
-
-const SessionSkeleton = () => (
-  <div aria-busy="true" aria-label="Loading workout">
-    <div className={clsx(skeletonClass, 'h-4 w-16')} />
-    <div className={clsx(skeletonClass, 'mt-5 h-9 w-44')} />
-    <div className={clsx(skeletonClass, 'mt-3 h-4 w-32')} />
-    <div className={clsx(panelClass, 'mt-8')}>
-      <div className="border-b border-neutral-800 px-4 py-4 sm:px-6">
-        <div className={clsx(skeletonClass, 'h-5 w-24')} />
-      </div>
-      {Array.from({ length: 5 }).map((_, index) => (
-        <div
-          key={index}
-          className="flex items-center gap-3 border-t border-neutral-800 px-4 py-4 first:border-t-0 sm:px-6"
-        >
-          <div className={clsx(skeletonClass, 'size-7 rounded-full')} />
-          <div className="flex-1">
-            <div className={clsx(skeletonClass, 'h-4 w-1/2')} />
-            <div className={clsx(skeletonClass, 'mt-2 h-3 w-16')} />
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)
 
 const SessionMessage = ({
   title,

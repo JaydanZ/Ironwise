@@ -44,7 +44,7 @@ const submission: WorkoutSubmission = {
 }
 
 describe('summarizeSession', () => {
-  const summary = summarizeSession(workout, submission, 'lb')
+  const summary = summarizeSession(workout, submission)
 
   it('groups logged sets by exercise and keeps skipped exercises', () => {
     expect(summary.exercises.map((e) => e.sets.length)).toEqual([3, 2, 0])
@@ -56,9 +56,8 @@ describe('summarizeSession', () => {
     expect(summary.exercises[1].best?.set_number).toBe(1)
   })
 
-  it('totals reps and volume', () => {
+  it('totals reps', () => {
     expect(summary.totalReps).toBe(40)
-    expect(summary.volume).toBe(135 * 8 + 155 * 6 + 155 * 8)
     expect(summary.isCompleted).toBe(false)
   })
 })
