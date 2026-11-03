@@ -30,7 +30,6 @@ import { ExerciseItem } from './ExerciseItem'
 import { MobileSession } from './MobileSession'
 import { SessionComplete } from './SessionComplete'
 import { SessionSummary, summarizeSession } from './sessionSummary'
-import { UnitToggle } from './UnitToggle'
 
 interface WorkoutSessionProps {
   programId: string
@@ -96,7 +95,7 @@ export const WorkoutSession = ({
       setConfirmOpen(false)
       setCompleted({
         result: response,
-        summary: summarizeSession(workout, submission, state.unit)
+        summary: summarizeSession(workout, submission)
       })
       window.scrollTo({ top: 0 })
     } catch (error) {
@@ -163,7 +162,7 @@ export const WorkoutSession = ({
         <MobileSession
           workout={workout}
           entries={state.entries}
-          unit={state.unit}
+          units={state.units}
           previous={previousQuery.data}
           allComplete={progress.allComplete}
           completedSets={progress.completedSets}
@@ -205,7 +204,6 @@ export const WorkoutSession = ({
               {programName}
             </p>
           </div>
-          <UnitToggle unit={state.unit} onChange={setUnit} />
         </div>
       </header>
 
@@ -240,13 +238,14 @@ export const WorkoutSession = ({
               exercise={exercise}
               exerciseIndex={index}
               sets={state.entries[index]}
-              unit={state.unit}
+              unit={state.units[index]}
               previous={previousQuery.data?.[exercise.name]}
               previousLoading={previousQuery.isLoading}
               onChange={updateSet}
               onFill={fillSet}
               onAddSet={addSet}
               onRemoveSet={removeSet}
+              onUnitChange={setUnit}
             />
           ))}
         </Accordion>

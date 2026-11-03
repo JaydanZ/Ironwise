@@ -4,6 +4,12 @@ Features added to, changed in, or removed from Ironwise, newest first.
 
 ## 2026-11-02
 
+**Changed**: Weight units per exercise
+
+- **What**: Each exercise in a workout now has its own kg/lb toggle, and the app remembers your choice for that exercise next time. Before, one unit applied to the whole workout, so switching it also relabelled sets you had already logged.
+- **What changed**: `useWorkoutSession` keeps a unit for each exercise, saves it in workout drafts, and remembers it under the new `ironwise:exercise-units` local storage key. `ironwise:weight-unit` is now only read, as the starting unit for exercises with no remembered choice. The desktop toggle moved from the page header into each exercise. `summarizeSession` no longer returns `volume` or `unit`, which nothing displayed and which would be wrong across mixed units.
+- **What it affects**: `/workout` on phones and desktop. Changing an exercise's unit relabels that exercise's sets without converting the numbers. Saved history and the API are unchanged, and drafts saved before this change still restore. Remembered units stay on the device they were set on.
+
 **Changed**: Mobile workout session layout
 
 - **What**: On phones, only the set rows scroll now, so adding sets no longer pushes the controls out of view, and a newly added set scrolls into view. On short screens the image shrinks first, then the list, down to one visible row. The exercise tip moved up, between the image and the sets.

@@ -89,6 +89,63 @@ describe('WorkoutSession layouts', () => {
     expect(document.querySelector('.font-inter')).toBeNull()
   })
 
+  const twoExercises: Workout = {
+    ...workout,
+    exercises: [
+      { name: 'Bench Press', sets: 1, reps: 8 },
+      { name: 'Pull Up', sets: 1, reps: 10 }
+    ]
+  }
+  const isChecked = (unit: string) =>
+    screen.getByRole('radio', { name: unit }).getAttribute('aria-checked')
+
+  it('submits each exercise logged on mobile in its own unit', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.useFakeTimers({ toFake: ['Date'] })
+    window.innerWidth = 390
+    render(
+      <WorkoutSession
+        programId="p1"
+        programName="Plan"
+        workout={twoExercises}
+      />
+    )
+    fireEvent.click(screen.getByRole('radio', { name: 'kg' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Mark set done' }))
+    vi.setSystemTime(Date.now() + 1000)
+    fireEvent.click(screen.getByRole('button', { name: 'Mark set done' }))
+    vi.setSystemTime(Date.now() + 1000)
+    fireEvent.click(screen.getByRole('button', { name: 'Submit workout' }))
+    await waitFor(() => expect(submitWorkout).toHaveBeenCalledTimes(1))
+    expect(submitWorkout.mock.calls[0]).toMatchObject([
+      {
+        sets: [
+          { exercise_name: 'Bench Press', weight_unit: 'kg' },
+          { exercise_name: 'Pull Up', weight_unit: 'lb' }
+        ]
+      }
+    ])
+  })
+
+  it('gives each exercise its own unit toggle on desktop', () => {
+    window.innerWidth = 800
+    render(
+      <WorkoutSession
+        programId="p1"
+        programName="Plan"
+        workout={twoExercises}
+      />
+    )
+    fireEvent.click(screen.getByRole('radio', { name: 'kg' }))
+    expect(isChecked('kg')).toBe('true')
+
+    fireEvent.click(screen.getByRole('button', { name: /Pull Up/ }))
+    expect(isChecked('lb')).toBe('true')
+
+    fireEvent.click(screen.getByRole('button', { name: /Bench Press/ }))
+    expect(isChecked('kg')).toBe('true')
+  })
+
   it('submits sets logged on mobile with a blank weight as null', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.useFakeTimers({ toFake: ['Date'] })

@@ -16,6 +16,7 @@ import {
   AccordionTrigger
 } from '@/components/ui/accordion'
 import { SetRow, setGridClass } from './SetRow'
+import { UnitToggle } from './UnitToggle'
 import {
   bestPreviousSet,
   previousSetFor,
@@ -38,6 +39,7 @@ interface ExerciseItemProps {
   onFill: (exercise: number, set: number, reps: string, weight: string) => void
   onAddSet: (exercise: number) => void
   onRemoveSet: (exercise: number) => void
+  onUnitChange: (exercise: number, unit: WeightUnit) => void
 }
 
 export const setActionClass =
@@ -61,7 +63,8 @@ export const ExerciseItem = memo(
     onChange,
     onFill,
     onAddSet,
-    onRemoveSet
+    onRemoveSet,
+    onUnitChange
   }: ExerciseItemProps) => {
     const complete = isExerciseComplete(sets)
     const loggedCount = sets.filter(isSetComplete).length
@@ -126,6 +129,12 @@ export const ExerciseItem = memo(
         </AccordionTrigger>
 
         <AccordionContent className="px-4 pb-4 sm:px-6">
+          <div className="mb-3 flex justify-end">
+            <UnitToggle
+              unit={unit}
+              onChange={(next) => onUnitChange(exerciseIndex, next)}
+            />
+          </div>
           <div
             aria-hidden
             className={clsx(

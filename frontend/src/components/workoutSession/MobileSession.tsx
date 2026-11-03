@@ -22,13 +22,12 @@ import {
 } from './sessionNavigation'
 import { SetLogPanel } from './SetLogPanel'
 
-// A fast second tap lands on the next set's done button, or on Submit, in the same spot
 const DOUBLE_TAP_MS = 400
 
 interface MobileSessionProps {
   workout: Workout
   entries: SetEntry[][]
-  unit: WeightUnit
+  units: WeightUnit[]
   previous?: PreviousPerformance
   allComplete: boolean
   completedSets: number
@@ -43,7 +42,7 @@ interface MobileSessionProps {
   ) => void
   onAddSet: (exercise: number) => void
   onRemoveSet: (exercise: number) => void
-  onUnitChange: (unit: WeightUnit) => void
+  onUnitChange: (exercise: number, unit: WeightUnit) => void
   onFinishEarly: () => void
   onSubmit: () => void
 }
@@ -51,7 +50,7 @@ interface MobileSessionProps {
 export const MobileSession = ({
   workout,
   entries,
-  unit,
+  units,
   previous,
   allComplete,
   completedSets,
@@ -78,6 +77,7 @@ export const MobileSession = ({
 
   const exercise = workout.exercises[exerciseIndex]
   const sets = entries[exerciseIndex]
+  const unit = units[exerciseIndex]
   const previousExercise = previous?.[exercise.name]
   const setIndex = selectedSetIndex(sets, setOverride)
   const editingSet = setOverride !== null && setOverride < sets.length
@@ -169,17 +169,15 @@ export const MobileSession = ({
         })}
         unit={unit}
         lastText={
-          toPreviousValues(
-            previousSetFor(previousExercise, setIndex + 1),
-            unit
-          )?.text ?? null
+          toPreviousValues(previousSetFor(previousExercise, setIndex + 1), unit)
+            ?.text ?? null
         }
         showSubmit={showSubmit}
         showFinishEarly={!allComplete}
         canFinishEarly={completedSets > 0}
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
-        onUnitChange={onUnitChange}
+        onUnitChange={(next) => onUnitChange(exerciseIndex, next)}
         onFinishEarly={onFinishEarly}
         onDone={handleDone}
         onSubmit={() => {

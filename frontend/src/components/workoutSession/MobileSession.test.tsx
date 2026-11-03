@@ -41,7 +41,7 @@ const Harness = ({ plan = workout }: { plan?: Workout }) => {
     <MobileSession
       workout={plan}
       entries={session.state.entries}
-      unit={session.state.unit}
+      units={session.state.units}
       allComplete={session.progress.allComplete}
       completedSets={session.progress.completedSets}
       isSubmitting={false}
@@ -64,6 +64,7 @@ const done = () => {
   laterTap()
   fireEvent.click(doneButton())
 }
+const unitOption = (unit: string) => screen.getByRole('radio', { name: unit })
 const setButton = (number: number) =>
   screen.getByRole('button', { name: new RegExp(`^Set ${number}`) })
 
@@ -100,6 +101,18 @@ describe('MobileSession', () => {
     expect(tip.compareDocumentPosition(setButton(1))).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     )
+  })
+
+  it('changes the unit of only the current exercise', () => {
+    render(<Harness />)
+    fireEvent.click(unitOption('kg'))
+    expect(unitOption('kg').getAttribute('aria-checked')).toBe('true')
+
+    done()
+    done()
+
+    expect(heading()).toBe('Pull Up')
+    expect(unitOption('lb').getAttribute('aria-checked')).toBe('true')
   })
 
   it('ignores the second tap of a double tap on done', () => {

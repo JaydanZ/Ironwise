@@ -11,7 +11,7 @@ type SetField = keyof SetEntry
 
 export interface SessionState {
   entries: SetEntry[][]
-  unit: WeightUnit
+  units: WeightUnit[]
 }
 
 export type SessionAction =
@@ -31,9 +31,10 @@ export type SessionAction =
     }
   | { type: 'addSet'; exercise: number }
   | { type: 'removeSet'; exercise: number }
-  | { type: 'setUnit'; unit: WeightUnit }
+  | { type: 'setUnit'; exercise: number; unit: WeightUnit }
 
 const UNIT_KEY = 'ironwise:weight-unit'
+const EXERCISE_UNITS_KEY = 'ironwise:exercise-units'
 const EMPTY_SET: SetEntry = { reps: '', weight: '', notes: '' }
 
 export const MIN_SETS = 1
@@ -131,7 +132,12 @@ export const sessionReducer = (
         )
       }
     case 'setUnit':
-      return { ...state, unit: action.unit }
+      return {
+        ...state,
+        units: state.units.map((unit, exerciseIndex) =>
+          exerciseIndex === action.exercise ? action.unit : unit
+        )
+      }
     default:
       return state
   }
@@ -164,7 +170,7 @@ export const buildSubmission = ({
         set_number: setIndex + 1,
         reps: parseInt(entry.reps, 10),
         weight: Number.isFinite(weight) ? weight : null,
-        weight_unit: state.unit,
+        weight_unit: state.units[exerciseIndex],
         notes: notes ? notes : null
       })
     })
@@ -203,6 +209,7 @@ export const DRAFT_MAX_AGE_MS = 18 * 60 * 60 * 1000
 interface DraftExercise {
   name: string
   sets: SetEntry[]
+  unit?: WeightUnit
 }
 
 export interface WorkoutDraft {
@@ -219,6 +226,9 @@ const toSetEntry = (entry: Partial<SetEntry> | null | undefined): SetEntry => ({
   weight: sanitizeWeight(String(entry?.weight ?? '')),
   notes: String(entry?.notes ?? '').slice(0, 280)
 })
+
+const isWeightUnit = (value: unknown): value is WeightUnit =>
+  value === 'lb' || value === 'kg'
 
 const hasInput = (entries: SetEntry[][]): boolean =>
   entries.some((sets) =>
@@ -252,7 +262,8 @@ export const parseDraft = (
       )
       .map((exercise) => ({
         name: exercise.name,
-        sets: exercise.sets.map(toSetEntry)
+        sets: exercise.sets.map(toSetEntry),
+        unit: isWeightUnit(exercise.unit) ? exercise.unit : undefined
       }))
     return { startedAt, performedOn, exercises }
   } catch {
@@ -260,21 +271,54 @@ export const parseDraft = (
   }
 }
 
-const sameExercise = (a: string, b: string) =>
-  a.trim().toLowerCase() === b.trim().toLowerCase()
+const exerciseKey = (name: string) => name.trim().toLowerCase()
+
+const matchDraft = (
+  exercises: Exercise[],
+  draft: DraftExercise[]
+): (DraftExercise | undefined)[] => {
+  const unclaimed = [...draft]
+  return exercises.map((exercise) => {
+    const match = unclaimed.findIndex(
+      (saved) => exerciseKey(saved.name) === exerciseKey(exercise.name)
+    )
+    return match === -1 ? undefined : unclaimed.splice(match, 1)[0]
+  })
+}
 
 export const restoreEntries = (
   exercises: Exercise[],
   draft: DraftExercise[]
-): SetEntry[][] => {
-  const unclaimed = [...draft]
-  return exercises.map((exercise) => {
-    const match = unclaimed.findIndex((saved) =>
-      sameExercise(saved.name, exercise.name)
+): SetEntry[][] =>
+  matchDraft(exercises, draft).map(
+    (saved, index) => saved?.sets ?? createEntries([exercises[index]])[0]
+  )
+
+export const restoreUnits = (
+  exercises: Exercise[],
+  draft: DraftExercise[],
+  startingUnit: (name: string) => WeightUnit
+): WeightUnit[] =>
+  matchDraft(exercises, draft).map(
+    (saved, index) => saved?.unit ?? startingUnit(exercises[index].name)
+  )
+
+const readRememberedUnits = (): Map<string, WeightUnit> => {
+  try {
+    const saved = JSON.parse(readStorage(EXERCISE_UNITS_KEY) ?? '{}')
+    return new Map(
+      Object.entries(saved).filter((entry): entry is [string, WeightUnit] =>
+        isWeightUnit(entry[1])
+      )
     )
-    if (match === -1) return createEntries([exercise])[0]
-    return unclaimed.splice(match, 1)[0].sets
-  })
+  } catch {
+    return new Map()
+  }
+}
+
+const rememberUnit = (name: string, unit: WeightUnit) => {
+  const units = readRememberedUnits().set(exerciseKey(name), unit)
+  writeStorage(EXERCISE_UNITS_KEY, JSON.stringify(Object.fromEntries(units)))
 }
 
 export const pruneDrafts = (storage: Storage, now: number) => {
@@ -295,12 +339,19 @@ const loadSession = (key: string, exercises: Exercise[]) => {
     // Pruning is housekeeping; a failure only leaves stale drafts behind
   }
   const draft = parseDraft(readStorage(key), now)
+  const remembered = readRememberedUnits()
+  const defaultUnit: WeightUnit = readStorage(UNIT_KEY) === 'kg' ? 'kg' : 'lb'
   return {
     startedAt: draft?.startedAt ?? now,
     performedOn: draft?.performedOn ?? localDateString(new Date(now)),
     entries: draft
       ? restoreEntries(exercises, draft.exercises)
-      : createEntries(exercises)
+      : createEntries(exercises),
+    units: restoreUnits(
+      exercises,
+      draft?.exercises ?? [],
+      (name) => remembered.get(exerciseKey(name)) ?? defaultUnit
+    )
   }
 }
 
@@ -322,7 +373,7 @@ export const useWorkoutSession = ({
     undefined,
     (): SessionState => ({
       entries: session.entries,
-      unit: readStorage(UNIT_KEY) === 'kg' ? 'kg' : 'lb'
+      units: session.units
     })
   )
 
@@ -336,15 +387,19 @@ export const useWorkoutSession = ({
       performedOn,
       exercises: workout.exercises.map((exercise, index) => ({
         name: exercise.name,
-        sets: state.entries[index]
+        sets: state.entries[index],
+        unit: state.units[index]
       }))
     }
     writeStorage(draftKey, JSON.stringify(draft))
-  }, [draftKey, startedAt, performedOn, workout.exercises, state.entries])
-
-  useEffect(() => {
-    writeStorage(UNIT_KEY, state.unit)
-  }, [state.unit])
+  }, [
+    draftKey,
+    startedAt,
+    performedOn,
+    workout.exercises,
+    state.entries,
+    state.units
+  ])
 
   const progress = useMemo(() => {
     const completedExercises = state.entries.filter(isExerciseComplete).length
@@ -382,8 +437,11 @@ export const useWorkoutSession = ({
   )
 
   const setUnit = useCallback(
-    (unit: WeightUnit) => dispatch({ type: 'setUnit', unit }),
-    []
+    (exercise: number, unit: WeightUnit) => {
+      dispatch({ type: 'setUnit', exercise, unit })
+      rememberUnit(workout.exercises[exercise].name, unit)
+    },
+    [workout.exercises]
   )
 
   const getSubmission = useCallback(
