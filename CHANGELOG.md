@@ -4,6 +4,12 @@ Features added to, changed in, or removed from Ironwise, newest first.
 
 ## 2026-11-02
 
+**Changed**: Mobile workout loading screen
+
+- **What**: On phones, the loading placeholder for a workout now matches the one-exercise-at-a-time layout and fills the screen, with no bottom nav. The back arrow works while it loads.
+- **What changed**: The new `SessionSkeleton` picks the mobile or desktop placeholder and replaces the one in `routes/workout.tsx`. `sessionStyles.ts` holds the layout classes shared with `MobileSession`, `ExerciseImage` and `SetLogPanel`, and `useHideSiteNav` is shared for hiding the bottom nav.
+- **What it affects**: `/workout` while loading under 800px. The desktop placeholder, the API and stored workouts are unchanged.
+
 **Changed**: Tidier last-session text in the mobile logging panel
 
 - **What**: On phones, the set number and your last weight and reps now have their own line in the logging panel, so the reps no longer wrap onto a line by themselves.

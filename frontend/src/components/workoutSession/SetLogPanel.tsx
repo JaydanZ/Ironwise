@@ -6,6 +6,7 @@ import { sanitizeReps, sanitizeWeight } from '@/hooks/useWorkoutSession'
 import { Button } from '@/components/ui/button'
 import { primaryButtonClass } from '../profile/profileStyles'
 import { PanelValues, stepReps, stepWeight } from './sessionNavigation'
+import { sessionLogPanelClass } from './sessionStyles'
 import { UnitToggle } from './UnitToggle'
 
 interface SetLogPanelProps {
@@ -109,7 +110,7 @@ export const SetLogPanel = ({
   return (
     <section
       aria-label="Log set"
-      className="touch-manipulation rounded-t-2xl border-t border-neutral-800 bg-[#141414] px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3"
+      className={sessionLogPanelClass}
     >
       {errorMessage && (
         <p role="alert" className="pb-2 text-sm text-red-400">

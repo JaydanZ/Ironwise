@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import clsx from 'clsx'
 import { ArrowLeft } from 'lucide-react'
 import { Workout } from '@/types/programCreation'
 import {
@@ -8,6 +9,7 @@ import {
   WeightUnit
 } from '@/types/workoutSession'
 import { toast } from '@/hooks/use-toast'
+import { useHideSiteNav } from '@/hooks/useHideSiteNav'
 import { ToastAction } from '@/components/ui/toast'
 import { ExerciseImage } from './ExerciseImage'
 import { ExerciseSwitcher } from './ExerciseSwitcher'
@@ -23,6 +25,12 @@ import {
   selectedSetIndex
 } from './sessionNavigation'
 import { SetLogPanel } from './SetLogPanel'
+import {
+  sessionBackLinkClass,
+  sessionBodyClass,
+  sessionFrameClass,
+  sessionHeaderClass
+} from './sessionStyles'
 
 const DOUBLE_TAP_MS = 400
 
@@ -76,10 +84,7 @@ export const MobileSession = ({
   const lastDoneAt = useRef(0)
   const dismissUndo = useRef<(() => void) | null>(null)
 
-  useEffect(() => {
-    document.body.setAttribute('data-workout-session', '')
-    return () => document.body.removeAttribute('data-workout-session')
-  }, [])
+  useHideSiteNav()
 
   // An undo after leaving or submitting would write a stale draft back
   useEffect(() => () => dismissUndo.current?.(), [])
@@ -144,12 +149,12 @@ export const MobileSession = ({
   }
 
   return (
-    <div className="fixed inset-x-0 top-0 z-40 flex h-dvh flex-col bg-app-colors-500 font-inter">
-      <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)] items-center gap-2 border-b border-neutral-800 px-4 pb-2 pt-[max(env(safe-area-inset-top),0.5rem)]">
+    <div className={sessionFrameClass}>
+      <header className={sessionHeaderClass}>
         <Link
           to="/training"
           aria-label="Back to training"
-          className="-ml-2 inline-flex size-11 items-center justify-center rounded-md text-neutral-400 outline-none transition-colors duration-150 hover:text-neutral-50 focus-visible:ring-1 focus-visible:ring-app-colors-300"
+          className={sessionBackLinkClass}
         >
           <ArrowLeft aria-hidden className="size-5" />
         </Link>
@@ -173,7 +178,10 @@ export const MobileSession = ({
 
       <div
         key={exerciseIndex}
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 py-4 duration-200 animate-in fade-in slide-in-from-right-4 motion-reduce:animate-none"
+        className={clsx(
+          sessionBodyClass,
+          'duration-200 animate-in fade-in slide-in-from-right-4 motion-reduce:animate-none'
+        )}
       >
         <ExerciseImage name={exercise.name} />
         {exercise.exercise_tip && (
