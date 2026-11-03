@@ -4,6 +4,18 @@ Features added to, changed in, or removed from Ironwise, newest first.
 
 ## 2026-11-02
 
+**Changed**: Tidier last-session text in the mobile logging panel
+
+- **What**: On phones, the set number and your last weight and reps now have their own line in the logging panel, so the reps no longer wrap onto a line by themselves.
+- **What changed**: `SetLogPanel` moves that text above the unit toggle and Finish early button, which now sit at opposite ends of their row.
+- **What it affects**: `/workout` under 800px. The panel is slightly taller, so the image gets slightly less room. Desktop, the API and stored workouts are unchanged.
+
+**Changed**: "Next:" label in the mobile workout session
+
+- **What**: On phones, the exercise name at the top right now has "Next:" above it, so it's clear that's the exercise coming up.
+- **What changed**: `ExerciseSwitcher` shows the label above the name. The name still shortens with an ellipsis when it's too long.
+- **What it affects**: `/workout` under 800px. Tapping and holding work as before, and desktop, the API and stored workouts are unchanged.
+
 **Changed**: Fading edges on the mobile set list
 
 - **What**: On phones, when the set list scrolls, its rows now fade out at the top and bottom instead of looking cut off. A fade only shows on an edge that has more rows past it.

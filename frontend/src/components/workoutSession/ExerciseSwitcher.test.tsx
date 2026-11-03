@@ -106,6 +106,22 @@ describe('ExerciseSwitcher', () => {
     expect(onSelect).toHaveBeenCalledWith(2)
   })
 
+  it('labels the next exercise above its name', () => {
+    setup()
+    const label = screen.getByText('Next:')
+    const name = screen.getByText('Pull Up')
+    expect(control().contains(label)).toBe(true)
+    expect(label.compareDocumentPosition(name)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
+  })
+
+  it('truncates a long next exercise name without hiding the label', () => {
+    setup()
+    expect(screen.getByText('Pull Up').className).toContain('truncate')
+    expect(screen.getByText('Next:').className).not.toContain('truncate')
+  })
+
   it('reads "Exercises" and opens the list on tap when nothing is next', () => {
     const onSelect = setup(null)
     const button = screen.getByRole('button', { name: 'Show exercises' })

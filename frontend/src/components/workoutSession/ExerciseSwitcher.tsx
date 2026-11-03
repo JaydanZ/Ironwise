@@ -98,9 +98,18 @@ export const ExerciseSwitcher = ({
               : `Next exercise: ${exercises[nextIndex].name}`
           }
           {...press}
-          className="min-h-11 min-w-0 touch-none select-none truncate rounded-md text-right text-sm text-neutral-500 outline-none transition-colors duration-150 [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] focus-visible:ring-1 focus-visible:ring-app-colors-300 active:text-neutral-300"
+          className="min-h-11 min-w-0 touch-none select-none rounded-md text-right text-sm text-neutral-500 outline-none transition-colors duration-150 [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] focus-visible:ring-1 focus-visible:ring-app-colors-300 active:text-neutral-300"
         >
-          {nextIndex === null ? 'Exercises' : exercises[nextIndex].name}
+          {nextIndex === null ? (
+            'Exercises'
+          ) : (
+            <>
+              <span className="block text-xs leading-tight">Next:</span>
+              <span className="block truncate leading-tight">
+                {exercises[nextIndex].name}
+              </span>
+            </>
+          )}
         </button>
         <DropdownMenuTrigger asChild>
           <button

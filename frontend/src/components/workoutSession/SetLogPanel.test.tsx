@@ -37,6 +37,14 @@ describe('SetLogPanel', () => {
     expect(screen.getByText('Set 2 of 4 · Last 135 lb × 8')).toBeTruthy()
   })
 
+  it('gives the set text its own line so it never wraps beside the buttons', () => {
+    render(<SetLogPanel {...props()} />)
+    const text = screen.getByText('Set 2 of 4 · Last 135 lb × 8')
+    const unit = screen.getByRole('radiogroup', { name: 'Weight unit' })
+    expect(text.className).toContain('truncate')
+    expect(unit.parentElement?.contains(text)).toBe(false)
+  })
+
   it('steps both values and sends them on done', () => {
     const onDone = vi.fn()
     render(<SetLogPanel {...props({ onDone })} />)
