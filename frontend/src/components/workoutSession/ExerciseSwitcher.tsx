@@ -1,4 +1,4 @@
-import { PointerEvent, useEffect, useRef, useState } from 'react'
+import { PointerEvent, TouchEvent, useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { Check } from 'lucide-react'
 import { Exercise } from '@/types/programCreation'
@@ -46,6 +46,9 @@ const useLongPress = (onHold: () => void, onTap: () => void) => {
     },
     onPointerUp: cancel,
     onPointerCancel: cancel,
+    onTouchEnd: (event: TouchEvent) => {
+      if (held.current) event.preventDefault()
+    },
     onClick: () => {
       // The click that ends a hold must not also jump to the next exercise
       if (held.current) {
@@ -76,6 +79,7 @@ export const ExerciseSwitcher = ({
 }: ExerciseSwitcherProps) => {
   const [open, setOpen] = useState(false)
   const openedByTouch = useRef(false)
+  const switcherButton = useRef<HTMLButtonElement>(null)
 
   const openList = () => {
     openedByTouch.current = true
@@ -97,6 +101,7 @@ export const ExerciseSwitcher = ({
               ? 'Show exercises'
               : `Next exercise: ${exercises[nextIndex].name}`
           }
+          ref={switcherButton}
           {...press}
           className="min-h-11 min-w-0 touch-none select-none rounded-md text-right text-sm text-neutral-500 outline-none transition-colors duration-150 [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] focus-visible:ring-1 focus-visible:ring-app-colors-300 active:text-neutral-300"
         >
@@ -123,6 +128,10 @@ export const ExerciseSwitcher = ({
       <DropdownMenuContent
         align="end"
         sideOffset={8}
+        onInteractOutside={(event) => {
+          if (switcherButton.current?.contains(event.target as Node))
+            event.preventDefault()
+        }}
         onCloseAutoFocus={(event) => {
           if (openedByTouch.current) event.preventDefault()
           openedByTouch.current = false
@@ -146,7 +155,10 @@ export const ExerciseSwitcher = ({
               <span className="flex shrink-0 items-center gap-1.5 text-xs tabular-nums text-neutral-400">
                 {sets.filter(isSetComplete).length}/{sets.length}
                 {isExerciseComplete(sets) && (
-                  <Check aria-label="Complete" className="text-app-colors-300" />
+                  <Check
+                    aria-label="Complete"
+                    className="text-app-colors-300"
+                  />
                 )}
               </span>
             </DropdownMenuItem>

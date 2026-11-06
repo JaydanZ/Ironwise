@@ -70,6 +70,48 @@ describe('ExerciseSwitcher', () => {
     expect(screen.getByRole('menu')).toBeTruthy()
   })
 
+  it('cancels the touch release after a hold so the browser sends no click', () => {
+    setup()
+    hold()
+    expect(fireEvent.touchEnd(control())).toBe(false)
+  })
+
+  it('lets a tap release through', () => {
+    setup()
+    fireEvent.pointerDown(control(), { clientX: 0, clientY: 0 })
+    expect(fireEvent.touchEnd(control())).toBe(true)
+  })
+
+  it('stays open when the release focuses the button', () => {
+    setup()
+    hold()
+    act(() => {
+      vi.advanceTimersByTime(0)
+      control().focus()
+    })
+    expect(screen.getByRole('menu')).toBeTruthy()
+  })
+
+  it('stays open when the button is pressed again', () => {
+    setup()
+    hold()
+    act(() => {
+      vi.advanceTimersByTime(0)
+    })
+    fireEvent.pointerDown(control(), { clientX: 0, clientY: 0 })
+    expect(screen.getByRole('menu')).toBeTruthy()
+  })
+
+  it('still closes on an interaction elsewhere', () => {
+    setup()
+    hold()
+    act(() => {
+      vi.advanceTimersByTime(0)
+    })
+    fireEvent.pointerDown(document.body)
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
   it('sets the portalled list in Inter', () => {
     setup()
     hold()
