@@ -32,8 +32,6 @@ export const Route = createRootRoute({
 })
 
 function MobileNav({ routes }: MobileNavProps) {
-  // Matches commit inside the view transition, so the indicator starts with
-  // the slide instead of before an async beforeLoad and then freezing
   const pathname = useRouterState({
     select: (s) => s.matches.at(-1)?.pathname ?? s.location.pathname
   })
