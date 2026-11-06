@@ -38,6 +38,19 @@ const generateYearDates = () => {
 
 const formatDateKey = (date: Date): string => localDateString(date)
 
+const cellDateFormat = new Intl.DateTimeFormat('en-US', {
+  weekday: 'short',
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric'
+})
+
+interface DayCell {
+  date: Date
+  hasWorkedOut: boolean
+  label: string
+}
+
 const MONTH_LABELS = [
   'Jan',
   'Feb',
@@ -69,6 +82,7 @@ export const WorkoutStreakTracker = ({
   const dragRef = useRef<{ startX: number; startScroll: number } | null>(null)
   const [isScrollable, setIsScrollable] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [isRevealed, setIsRevealed] = useState(false)
 
   const yearData = useMemo(() => {
     const dates = generateYearDates()
@@ -82,8 +96,8 @@ export const WorkoutStreakTracker = ({
       })
     }
 
-    const weeks: (Date | null)[][] = []
-    let currentWeek: (Date | null)[] = []
+    const weeks: (DayCell | null)[][] = []
+    let currentWeek: (DayCell | null)[] = []
 
     dates.forEach((date) => {
       if (date.getDay() === 0 && currentWeek.length > 0) {
@@ -91,14 +105,22 @@ export const WorkoutStreakTracker = ({
         weeks.push(currentWeek)
         currentWeek = []
       }
-      currentWeek.push(date)
+      const hasWorkedOut =
+        workoutMap.get(formatDateKey(date))?.has_worked_out ?? false
+      currentWeek.push({
+        date,
+        hasWorkedOut,
+        label: `${cellDateFormat.format(date)}${
+          hasWorkedOut ? ', workout completed' : ''
+        }`
+      })
     })
 
     if (currentWeek.length > 0) {
       weeks.push(currentWeek)
     }
 
-    return { weeks, workoutMap }
+    return { weeks }
   }, [data])
 
   const totalWorkouts = data?.filter((w) => w.has_worked_out).length || 0
@@ -136,7 +158,7 @@ export const WorkoutStreakTracker = ({
   useEffect(() => {
     const el = scrollRef.current
     if (el) el.scrollLeft = el.scrollWidth
-  }, [yearData, isLoading, data])
+  }, [yearData, isLoading, data, isRevealed])
 
   useEffect(() => {
     const el = scrollRef.current
@@ -146,7 +168,39 @@ export const WorkoutStreakTracker = ({
     const observer = new ResizeObserver(update)
     observer.observe(el)
     return () => observer.disconnect()
-  }, [isLoading])
+  }, [isLoading, isRevealed])
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || isRevealed) return
+    let isCancelled = false
+    let isVisible = false
+    let isSettled = false
+    const reveal = () => {
+      if (!isCancelled && isVisible && isSettled) setIsRevealed(true)
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      isVisible = entry.isIntersecting
+      reveal()
+    })
+    observer.observe(el)
+
+    const transition = (
+      document as Document & { activeViewTransition?: ViewTransition | null }
+    ).activeViewTransition
+    ;(transition?.finished ?? Promise.resolve())
+      .catch(() => {})
+      .then(() => {
+        isSettled = true
+        reveal()
+      })
+
+    return () => {
+      isCancelled = true
+      observer.disconnect()
+    }
+  }, [isLoading, isRevealed])
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     const el = scrollRef.current
@@ -262,99 +316,97 @@ export const WorkoutStreakTracker = ({
               isDragging && 'cursor-grabbing select-none'
             )}
           >
-            <div
-              role="img"
-              aria-label={`Workout activity for the last year: ${totalWorkouts} workouts, current streak ${currentStreak} days`}
-              className="flex w-max"
-            >
+            {isRevealed ? (
               <div
-                style={cascade(1)}
-                className="sticky left-0 z-10 flex animate-fade-in flex-col gap-[3px] bg-[#141414] pr-2 pt-5"
+                role="img"
+                aria-label={`Workout activity for the last year: ${totalWorkouts} workouts, current streak ${currentStreak} days`}
+                className="flex w-max"
               >
-                {DAY_LABELS.map((day, index) => (
-                  <div
-                    key={index}
-                    className="flex h-2.5 items-center text-[10px] text-neutral-400 sm:h-3 lg:h-[15px]"
-                  >
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-col">
                 <div
                   style={cascade(1)}
-                  className="mb-1.5 flex animate-fade-in gap-[3px]"
+                  className="sticky left-0 z-10 flex animate-fade-in flex-col gap-[3px] bg-[#141414] pr-2 pt-5"
                 >
-                  {yearData.weeks.map((week, weekIndex) => {
-                    const firstDay = week.find((day) => day !== null)
-                    const prevFirstDay = yearData.weeks[weekIndex - 1]?.find(
-                      (day) => day !== null
-                    )
-                    const isNewMonth =
-                      firstDay &&
-                      (weekIndex === 0 ||
-                        firstDay.getMonth() !== prevFirstDay?.getMonth())
-
-                    return (
-                      <div
-                        key={weekIndex}
-                        className="relative h-3.5 w-2.5 text-[10px] leading-none text-neutral-400 sm:w-3 lg:w-[15px]"
-                      >
-                        {isNewMonth && (
-                          <span className="absolute left-0 top-0 whitespace-nowrap">
-                            {MONTH_LABELS[firstDay.getMonth()]}
-                          </span>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-
-                <div
-                  className={clsx(
-                    'flex gap-[3px] transition-opacity duration-200',
-                    isLoading && 'animate-pulse opacity-60'
-                  )}
-                >
-                  {yearData.weeks.map((week, weekIndex) => (
-                    <div key={weekIndex} className="flex flex-col gap-[3px]">
-                      {Array.from({ length: 7 }).map((_, dayIndex) => {
-                        const date = week[dayIndex]
-                        if (!date) {
-                          return <div key={dayIndex} className={CELL} />
-                        }
-
-                        const workout = yearData.workoutMap.get(
-                          formatDateKey(date)
-                        )
-                        const hasWorkedOut = workout?.has_worked_out ?? false
-
-                        return (
-                          <div
-                            key={dayIndex}
-                            style={cascade(weekIndex + dayIndex)}
-                            className={clsx(
-                              CELL,
-                              'animate-cell-in',
-                              hasWorkedOut
-                                ? 'bg-app-colors-300'
-                                : 'bg-neutral-800/70'
-                            )}
-                            title={`${date.toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            })}${hasWorkedOut ? ', workout completed' : ''}`}
-                          />
-                        )
-                      })}
+                  {DAY_LABELS.map((day, index) => (
+                    <div
+                      key={index}
+                      className="flex h-2.5 items-center text-[10px] text-neutral-400 sm:h-3 lg:h-[15px]"
+                    >
+                      {day}
                     </div>
                   ))}
                 </div>
+
+                <div className="flex flex-col">
+                  <div
+                    style={cascade(1)}
+                    className="mb-1.5 flex animate-fade-in gap-[3px]"
+                  >
+                    {yearData.weeks.map((week, weekIndex) => {
+                      const firstDay = week.find((day) => day !== null)
+                      const prevFirstDay = yearData.weeks[weekIndex - 1]?.find(
+                        (day) => day !== null
+                      )
+                      const isNewMonth =
+                        firstDay &&
+                        (weekIndex === 0 ||
+                          firstDay.date.getMonth() !==
+                            prevFirstDay?.date.getMonth())
+
+                      return (
+                        <div
+                          key={weekIndex}
+                          className="relative h-3.5 w-2.5 text-[10px] leading-none text-neutral-400 sm:w-3 lg:w-[15px]"
+                        >
+                          {isNewMonth && (
+                            <span className="absolute left-0 top-0 whitespace-nowrap">
+                              {MONTH_LABELS[firstDay.date.getMonth()]}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <div
+                    className={clsx(
+                      'flex gap-[3px] transition-opacity duration-200',
+                      isLoading && 'animate-pulse opacity-60'
+                    )}
+                  >
+                    {yearData.weeks.map((week, weekIndex) => (
+                      <div key={weekIndex} className="flex flex-col gap-[3px]">
+                        {Array.from({ length: 7 }).map((_, dayIndex) => {
+                          const cell = week[dayIndex]
+                          if (!cell) {
+                            return <div key={dayIndex} className={CELL} />
+                          }
+
+                          return (
+                            <div
+                              key={dayIndex}
+                              style={cascade(weekIndex + dayIndex)}
+                              className={clsx(
+                                CELL,
+                                'animate-cell-in',
+                                cell.hasWorkedOut
+                                  ? 'bg-app-colors-300'
+                                  : 'bg-neutral-800/70'
+                              )}
+                              title={cell.label}
+                            />
+                          )
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div
+                aria-hidden
+                className="h-[108px] sm:h-[122px] lg:h-[143px]"
+              />
+            )}
           </div>
 
           <div
