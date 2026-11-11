@@ -1,4 +1,4 @@
-import { ReactNode, useId, useMemo, useState } from 'react'
+import { ReactNode, Suspense, lazy, useId, useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { Dumbbell, Trophy } from 'lucide-react'
 import { useGetLiftHistoryQuery } from '@/services/protectedRoutesAPI'
@@ -23,7 +23,6 @@ import {
   menuContentClass
 } from '../programCreation/menuStyles'
 import { parseLogDate } from '../training/workoutHistory'
-import { ExerciseTrendChart } from './ExerciseTrendChart'
 import {
   BestSet,
   buildExerciseTrend,
@@ -32,6 +31,12 @@ import {
   formatWeight,
   trendExercises
 } from './progress'
+
+const ExerciseTrendChart = lazy(() =>
+  import('./ExerciseTrendChart').then((module) => ({
+    default: module.ExerciseTrendChart
+  }))
+)
 
 const sectionTitleClass = 'text-sm font-medium text-neutral-300'
 
@@ -347,7 +352,17 @@ export const ProgressPanel = () => {
                 est. 1RM since {shortDate(trend.points[0].date)} &middot;{' '}
                 {trend.points.length} sessions
               </p>
-              <ExerciseTrendChart trend={trend} />
+              <Suspense
+                fallback={
+                  <div
+                    aria-busy="true"
+                    aria-label="Loading chart"
+                    className={clsx(skeletonClass, 'mt-7 h-44 w-full')}
+                  />
+                }
+              >
+                <ExerciseTrendChart trend={trend} />
+              </Suspense>
             </div>
           )}
         </div>

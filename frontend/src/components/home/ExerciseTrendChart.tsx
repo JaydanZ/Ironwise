@@ -1,5 +1,6 @@
 import { KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import * as echarts from 'echarts/core'
+import { useInView } from 'motion/react'
 import {
   EChartsLineChart,
   type ChartConfig
@@ -25,6 +26,8 @@ type ChartInstance = ReturnType<typeof echarts.init>
 export const ExerciseTrendChart = ({ trend }: { trend: ExerciseTrend }) => {
   const ref = useRef<HTMLDivElement>(null)
   const chartRef = useRef<ChartInstance | null>(null)
+  const plotRef = useRef<HTMLDivElement>(null)
+  const inView = useInView(plotRef, { once: true, amount: 0.6 })
   const [active, setActive] = useState<number | null>(null)
   const { points, unit } = trend
 
@@ -56,7 +59,7 @@ export const ExerciseTrendChart = ({ trend }: { trend: ExerciseTrend }) => {
       chart.off('updateAxisPointer', onAxisPointer)
       chart.getZr().off('globalout', onLeave)
     }
-  }, [])
+  }, [inView])
 
   const last = points.length - 1
 
@@ -109,6 +112,7 @@ export const ExerciseTrendChart = ({ trend }: { trend: ExerciseTrend }) => {
         </span>
       </p>
       <div
+        ref={plotRef}
         role="img"
         tabIndex={0}
         aria-label={`${trend.exercise} estimated one-rep max across ${
@@ -126,29 +130,33 @@ export const ExerciseTrendChart = ({ trend }: { trend: ExerciseTrend }) => {
         onKeyDown={handleKeyDown}
         className="mt-2 touch-pan-y rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-app-colors-300"
       >
-        <EChartsLineChart
-          data={data}
-          config={chartConfig}
-          xDataKey="date"
-          className="h-44"
-        >
-          <EChartsLineChart.Grid />
-          <EChartsLineChart.XAxis />
-          <EChartsLineChart.YAxis
-            scale
-            tickFormatter={(value) => formatWeight(value)}
-          />
-          <EChartsLineChart.Tooltip
-            valueFormatter={(_, index) => {
-              const { set } = points[index]
-              return `${formatWeight(set.weight)} ${set.unit} × ${set.reps}`
-            }}
-          />
-          <EChartsLineChart.Line dataKey="e1rm" strokeWidth={2}>
-            <EChartsLineChart.Dot />
-            <EChartsLineChart.ActiveDot variant="colored-border" />
-          </EChartsLineChart.Line>
-        </EChartsLineChart>
+        {inView ? (
+          <EChartsLineChart
+            data={data}
+            config={chartConfig}
+            xDataKey="date"
+            className="h-44"
+          >
+            <EChartsLineChart.Grid />
+            <EChartsLineChart.XAxis />
+            <EChartsLineChart.YAxis
+              scale
+              tickFormatter={(value) => formatWeight(value)}
+            />
+            <EChartsLineChart.Tooltip
+              valueFormatter={(_, index) => {
+                const { set } = points[index]
+                return `${formatWeight(set.weight)} ${set.unit} × ${set.reps}`
+              }}
+            />
+            <EChartsLineChart.Line dataKey="e1rm" strokeWidth={2}>
+              <EChartsLineChart.Dot />
+              <EChartsLineChart.ActiveDot variant="colored-border" />
+            </EChartsLineChart.Line>
+          </EChartsLineChart>
+        ) : (
+          <div className="h-44" />
+        )}
       </div>
 
       <table className="sr-only">
