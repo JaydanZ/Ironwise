@@ -1,4 +1,4 @@
-import { ReactNode, useId, useMemo, useState } from 'react'
+import { ReactNode, Suspense, lazy, useId, useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { Dumbbell, Trophy } from 'lucide-react'
 import { useGetLiftHistoryQuery } from '@/services/protectedRoutesAPI'
@@ -23,7 +23,6 @@ import {
   menuContentClass
 } from '../programCreation/menuStyles'
 import { parseLogDate } from '../training/workoutHistory'
-import { ExerciseTrendChart } from './ExerciseTrendChart'
 import {
   BestSet,
   buildExerciseTrend,
@@ -32,6 +31,12 @@ import {
   formatWeight,
   trendExercises
 } from './progress'
+
+const ExerciseTrendChart = lazy(() =>
+  import('./ExerciseTrendChart').then((module) => ({
+    default: module.ExerciseTrendChart
+  }))
+)
 
 const sectionTitleClass = 'text-sm font-medium text-neutral-300'
 
@@ -139,6 +144,15 @@ const OneRepMaxTip = ({ example }: { example: BestSet }) => (
   </>
 )
 
+const RecordsTip = ({ example }: { example: BestSet }) => (
+  <>
+    <p className="mb-1.5 font-semibold text-neutral-50">
+      Workouts where you beat your previous best for a lift
+    </p>
+    <OneRepMaxTip example={example} />
+  </>
+)
+
 const TREND_TIP = (
   <>
     <p className="font-semibold text-neutral-50">
@@ -146,7 +160,6 @@ const TREND_TIP = (
     </p>
     <ul className="mt-1.5 space-y-0.5 text-neutral-400">
       <li>Point: best set of a workout</li>
-      <li>Gap: 4+ weeks without the lift</li>
       <li>Drag across to see each session</li>
     </ul>
   </>
@@ -245,14 +258,11 @@ export const ProgressPanel = () => {
                 <div className="flex items-center justify-between gap-3">
                   <SectionHeading
                     title="Recent records"
-                    tipLabel="What is an estimated 1-rep max?"
-                    tip={<OneRepMaxTip example={records[0].set} />}
+                    tipLabel="About recent records"
+                    tip={<RecordsTip example={records[0].set} />}
                   />
                   <OneRepMaxColumnLabel />
                 </div>
-                <p className="mt-0.5 text-sm text-neutral-400">
-                  Workouts where you beat your previous best for a lift.
-                </p>
                 <ul className="mt-2">
                   {records.map((record) => (
                     <LiftRow
@@ -348,7 +358,17 @@ export const ProgressPanel = () => {
                 est. 1RM since {shortDate(trend.points[0].date)} &middot;{' '}
                 {trend.points.length} sessions
               </p>
-              <ExerciseTrendChart trend={trend} />
+              <Suspense
+                fallback={
+                  <div
+                    aria-busy="true"
+                    aria-label="Loading chart"
+                    className={clsx(skeletonClass, 'mt-7 h-44 w-full')}
+                  />
+                }
+              >
+                <ExerciseTrendChart trend={trend} />
+              </Suspense>
             </div>
           )}
         </div>

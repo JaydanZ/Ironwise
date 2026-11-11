@@ -2,6 +2,20 @@
 
 Features added to, changed in, or removed from Ironwise, newest first.
 
+## 2026-11-11
+
+**Changed**: Recent records explanation moved into its info tip
+
+- **What**: On the home page, the line under "Recent records" explaining what counts as a record is gone. That explanation now opens the section's info tip, above the est. 1RM explanation.
+- **What changed**: `ProgressPanel` adds `RecordsTip` for the Recent records heading, whose info button is now labelled "About recent records".
+- **What it affects**: The Your Progress panel on the home page, which is slightly shorter. The Best lifts heading, shown before you have any records, keeps its est. 1RM tip. The API and stored workouts are unchanged.
+
+**Changed**: New strength trend chart, with the best set leading its readout
+
+- **What**: The strength trend chart on the home page is now drawn with Evil Charts, with a dot for each session and dashed gridlines. Hovering or tapping a session turns its dot into an outline and shows a tooltip with that session's best set. Above the chart, the session's best set (for example 115 lb × 9) now comes first in bold, followed by its estimated 1-rep max.
+- **What changed**: `ExerciseTrendChart` renders `EChartsLineChart`, added from the `@evilcharts` shadcn registry into `src/components/evilcharts/` along with the `echarts` dependency, its `YAxis` gains a `scale` prop so the axis fits the data instead of starting at zero, and its `Tooltip` gains a `valueFormatter` prop. `ProgressPanel` lazy-loads the chart, so ECharts downloads in its own chunk after the panel shows, with a placeholder the same size as the chart until it arrives. `ExerciseTrendChart` waits until 60% of the chart is on screen before mounting it, so its draw-in animation plays where you can see it, and remounts it when you pick another exercise so the draw-in plays again for the new data. `chartScale.ts` and its tests are removed, since the old hand-drawn SVG chart was their only user.
+- **What it affects**: The Your Progress panel on the home page. Sessions are now evenly spaced along the chart instead of placed by date, and the line no longer breaks after 4+ weeks without the lift, so that line is gone from the info tip. Hovering, dragging and arrow keys still step through sessions and update the readout. The landing page demo, the API and stored workouts are unchanged.
+
 ## 2026-11-03
 
 **Added**: Swipe between exercises in the mobile workout session
