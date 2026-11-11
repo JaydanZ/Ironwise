@@ -6,7 +6,7 @@ export const panelHeaderClass =
 export const panelTitleClass = 'text-base font-semibold text-neutral-50'
 
 export const primaryButtonClass =
-  'h-10 gap-2 rounded-md bg-app-colors-300 px-4 text-sm font-semibold text-app-colors-500 shadow-none transition-[transform,background-color] duration-150 ease-out-strong hover:bg-[#3eff34] active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-app-colors-300 focus-visible:ring-offset-2 focus-visible:ring-offset-app-colors-500 [&_svg]:size-4'
+  'h-10 gap-2 rounded-md bg-app-colors-300 px-4 text-sm font-semibold text-app-colors-500 shadow-none transition-[transform,background-color] duration-150 ease-out-strong hover:bg-[#65f062] active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-app-colors-300 focus-visible:ring-offset-2 focus-visible:ring-offset-app-colors-500 [&_svg]:size-4'
 
 export const iconButtonClass =
   'inline-flex size-10 items-center justify-center rounded-md text-neutral-400 transition-[transform,color,background-color] duration-150 ease-out-strong hover:bg-neutral-800/70 hover:text-neutral-50 active:scale-[0.94] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-app-colors-300 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-[1.125rem]'

@@ -92,7 +92,7 @@ const TrendChart = ({ index }: { index: number }) => {
               i === lastIndex ? 'fill-app-colors-300' : 'fill-[#141414]',
               'animate-fade-in'
             )}
-            stroke={i === lastIndex ? '#14ff08' : '#3fe6d6'}
+            stroke={i === lastIndex ? '#46ea43' : '#3fe6d6'}
             strokeWidth="2"
             style={{ animationDelay: `${200 + i * 60}ms` }}
           />

@@ -222,7 +222,7 @@ export const ProgramResult = () => {
         style={delay(0)}
         className={clsx(
           enter,
-          '-ml-2 inline-flex h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-app-colors-300 outline-none transition-[transform,color] duration-150 ease-out-strong [-webkit-tap-highlight-color:transparent] active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-app-colors-300 motion-reduce:active:scale-100 [@media(hover:hover)]:hover:text-[#3eff34] sm:h-9 [&_svg]:size-4'
+          '-ml-2 inline-flex h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-app-colors-300 outline-none transition-[transform,color] duration-150 ease-out-strong [-webkit-tap-highlight-color:transparent] active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-app-colors-300 motion-reduce:active:scale-100 [@media(hover:hover)]:hover:text-[#65f062] sm:h-9 [&_svg]:size-4'
         )}
       >
         <ArrowLeft aria-hidden />
