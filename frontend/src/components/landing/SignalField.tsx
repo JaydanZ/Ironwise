@@ -33,7 +33,7 @@ uniform float uIntensity;
 const vec3 DEEP_BLUE = vec3(0.137, 0.235, 0.737);
 const vec3 PURPLE = vec3(0.608, 0.420, 1.0);
 const vec3 AQUA = vec3(0.247, 0.902, 0.839);
-const vec3 LIME = vec3(0.580, 0.918, 0.263);
+const vec3 LIME = vec3(0.078, 1.000, 0.031);
 
 vec3 permute(vec3 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
 
