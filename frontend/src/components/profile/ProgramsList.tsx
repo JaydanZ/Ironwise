@@ -134,7 +134,7 @@ export const ProgramRow = memo((props: ProgramRowProps): ReactElement => {
             className={cn(
               'transition-[color,filter] duration-200 ease-out-strong',
               props.isActive &&
-                'text-app-colors-300 [filter:brightness(1.15)_drop-shadow(0_0_2px_rgba(148,234,67,0.9))_drop-shadow(0_0_8px_rgba(148,234,67,0.6))]',
+                'text-app-colors-300 [filter:brightness(1.15)_drop-shadow(0_0_2px_rgba(70,234,67,0.9))_drop-shadow(0_0_8px_rgba(70,234,67,0.6))]',
               isActivating && 'animate-pulse'
             )}
           />

@@ -17,7 +17,7 @@ import {
 } from './menuStyles'
 
 const LARGE_BUTTON_CLASS =
-  'group h-12 gap-2.5 rounded-md bg-app-colors-300 px-6 text-base font-semibold text-app-colors-500 shadow-[0_6px_16px_-8px_rgba(0,0,0,0.6)] transition-[transform,background-color] duration-150 ease-out-strong hover:bg-[#a6f062] active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-app-colors-300 focus-visible:ring-offset-2 focus-visible:ring-offset-app-colors-500 [&_svg]:size-[1.125rem]'
+  'group h-12 gap-2.5 rounded-md bg-app-colors-300 px-6 text-base font-semibold text-app-colors-500 shadow-[0_6px_16px_-8px_rgba(0,0,0,0.6)] transition-[transform,background-color] duration-150 ease-out-strong hover:bg-[#65f062] active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-app-colors-300 focus-visible:ring-offset-2 focus-visible:ring-offset-app-colors-500 [&_svg]:size-[1.125rem]'
 
 interface CreateProgramButtonProps {
   className?: string

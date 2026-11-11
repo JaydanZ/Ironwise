@@ -216,7 +216,7 @@ export function ForgotPassword() {
                 type="button"
                 onClick={resendCode}
                 disabled={isLoading}
-                className="text-[#94ea43] hover:underline disabled:opacity-50"
+                className="text-[#46ea43] hover:underline disabled:opacity-50"
               >
                 Send a new code
               </button>

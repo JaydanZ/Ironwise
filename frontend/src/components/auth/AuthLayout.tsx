@@ -116,7 +116,7 @@ export function AuthSubmitButton({
     <Button
       type="submit"
       disabled={isLoading}
-      className="mt-7 h-12 w-full rounded-full bg-app-colors-300 text-base font-semibold text-app-colors-500 transition-[transform,background-color] duration-150 ease-out-strong hover:bg-[#a6f062] active:scale-[0.98] motion-reduce:active:scale-100 [&_svg]:size-[1.125rem] [@media(max-height:720px)]:mt-5"
+      className="mt-7 h-12 w-full rounded-full bg-app-colors-300 text-base font-semibold text-app-colors-500 transition-[transform,background-color] duration-150 ease-out-strong hover:bg-[#65f062] active:scale-[0.98] motion-reduce:active:scale-100 [&_svg]:size-[1.125rem] [@media(max-height:720px)]:mt-5"
     >
       {isLoading && <Spinner />} {children}
       {!isLoading && <ArrowRight aria-hidden />}

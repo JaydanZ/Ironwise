@@ -330,7 +330,7 @@ export const TrainingScreen = () => (
                 className={clsx(
                   'size-[15px]',
                   program.isActive
-                    ? 'text-app-colors-300 [filter:drop-shadow(0_0_4px_rgba(148,234,67,0.7))]'
+                    ? 'text-app-colors-300 [filter:drop-shadow(0_0_4px_rgba(70,234,67,0.7))]'
                     : 'text-neutral-500'
                 )}
               />
