@@ -59,7 +59,7 @@ export const ExerciseTrendChart = ({ trend }: { trend: ExerciseTrend }) => {
       chart.off('updateAxisPointer', onAxisPointer)
       chart.getZr().off('globalout', onLeave)
     }
-  }, [inView])
+  }, [inView, trend.exercise])
 
   const last = points.length - 1
 
@@ -132,6 +132,7 @@ export const ExerciseTrendChart = ({ trend }: { trend: ExerciseTrend }) => {
       >
         {inView ? (
           <EChartsLineChart
+            key={trend.exercise}
             data={data}
             config={chartConfig}
             xDataKey="date"
