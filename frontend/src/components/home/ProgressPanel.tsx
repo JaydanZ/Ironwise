@@ -146,7 +146,6 @@ const TREND_TIP = (
     </p>
     <ul className="mt-1.5 space-y-0.5 text-neutral-400">
       <li>Point: best set of a workout</li>
-      <li>Gap: 4+ weeks without the lift</li>
       <li>Drag across to see each session</li>
     </ul>
   </>
