@@ -144,6 +144,15 @@ const OneRepMaxTip = ({ example }: { example: BestSet }) => (
   </>
 )
 
+const RecordsTip = ({ example }: { example: BestSet }) => (
+  <>
+    <p className="mb-1.5 font-semibold text-neutral-50">
+      Workouts where you beat your previous best for a lift
+    </p>
+    <OneRepMaxTip example={example} />
+  </>
+)
+
 const TREND_TIP = (
   <>
     <p className="font-semibold text-neutral-50">
@@ -249,14 +258,11 @@ export const ProgressPanel = () => {
                 <div className="flex items-center justify-between gap-3">
                   <SectionHeading
                     title="Recent records"
-                    tipLabel="What is an estimated 1-rep max?"
-                    tip={<OneRepMaxTip example={records[0].set} />}
+                    tipLabel="About recent records"
+                    tip={<RecordsTip example={records[0].set} />}
                   />
                   <OneRepMaxColumnLabel />
                 </div>
-                <p className="mt-0.5 text-sm text-neutral-400">
-                  Workouts where you beat your previous best for a lift.
-                </p>
                 <ul className="mt-2">
                   {records.map((record) => (
                     <LiftRow

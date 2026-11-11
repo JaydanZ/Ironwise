@@ -4,6 +4,12 @@ Features added to, changed in, or removed from Ironwise, newest first.
 
 ## 2026-11-11
 
+**Changed**: Recent records explanation moved into its info tip
+
+- **What**: On the home page, the line under "Recent records" explaining what counts as a record is gone. That explanation now opens the section's info tip, above the est. 1RM explanation.
+- **What changed**: `ProgressPanel` adds `RecordsTip` for the Recent records heading, whose info button is now labelled "About recent records".
+- **What it affects**: The Your Progress panel on the home page, which is slightly shorter. The Best lifts heading, shown before you have any records, keeps its est. 1RM tip. The API and stored workouts are unchanged.
+
 **Changed**: New strength trend chart, with the best set leading its readout
 
 - **What**: The strength trend chart on the home page is now drawn with Evil Charts, with a dot for each session and dashed gridlines. Hovering or tapping a session turns its dot into an outline and shows a tooltip with that session's best set. Above the chart, the session's best set (for example 115 lb × 9) now comes first in bold, followed by its estimated 1-rep max.
