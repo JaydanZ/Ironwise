@@ -25,6 +25,7 @@ Still in active development.
 
 - Create programs from scratch or edit saved ones: days, exercises, sets, reps and weekday order.
 - Mobile-friendly editor with a pinned header and save button.
+- Exercise name suggestions while you type, with custom names still allowed.
 - Paginated, searchable program list on your profile.
 
 ### Logging workouts

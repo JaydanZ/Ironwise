@@ -17,6 +17,7 @@ import {
   Trash2
 } from 'lucide-react'
 import { ProgramStruct, WorkoutProgram } from '@/types/programCreation'
+import exerciseCatalogue from '@/data/exerciseCatalogue.json'
 import { programImport, updateProgram } from '@/services/programsAPI'
 import { toast } from '@/hooks/use-toast'
 import { protectedApiSlice } from '@/services/protectedRoutesAPI'
@@ -61,6 +62,8 @@ import {
 } from '@/constants/programRules'
 
 type SaveStatus = 'idle' | 'saving' | 'error'
+
+const EXERCISE_SUGGESTIONS_ID = 'exercise-name-suggestions'
 
 interface ExerciseDraft {
   id: string
@@ -362,6 +365,11 @@ export function ManualProgramCreation({
   return (
     <MotionConfig reducedMotion="user">
       <section className="w-full max-w-3xl">
+        <datalist id={EXERCISE_SUGGESTIONS_ID}>
+          {exerciseCatalogue.map(({ id, name }) => (
+            <option key={id} value={name} />
+          ))}
+        </datalist>
         <div ref={sentinelRef} aria-hidden />
         <header className="pointer-events-none sticky top-0 z-30 pb-3 pt-[max(env(safe-area-inset-top),1rem)] min-[800px]:static min-[800px]:pt-4 [&_a]:pointer-events-auto">
           <div
@@ -787,6 +795,9 @@ export function ManualProgramCreation({
                                                             )
                                                       }
                                                       placeholder="Bench Press"
+                                                      list={
+                                                        EXERCISE_SUGGESTIONS_ID
+                                                      }
                                                       value={field.state.value}
                                                       onChange={(e) =>
                                                         field.handleChange(

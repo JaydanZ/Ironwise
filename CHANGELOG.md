@@ -4,6 +4,12 @@ Features added to, changed in, or removed from Ironwise, newest first.
 
 ## 2026-11-16
 
+**Added**: Exercise name suggestions in the program editor
+
+- **What**: Typing an exercise name suggests names that have an illustration. Custom names still work.
+- **What changed**: `ManualProgramCreation` adds a native `datalist` from `exerciseCatalogue.json`.
+- **What it affects**: The create and edit program pages. Saved data and validation are unchanged.
+
 **Added**: Exercise illustrations in the mobile workout session
 
 - **What**: The phone workout screen shows a drawing of the current exercise. Exercises without a matching drawing keep the dumbbell placeholder.

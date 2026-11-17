@@ -319,4 +319,26 @@ describe('ManualProgramCreation', () => {
       })
     })
   })
+
+  it('suggests catalogue names for an exercise', () => {
+    const { container } = render(<ManualProgramCreation />)
+
+    const listId = screen.getByLabelText('Exercise Name').getAttribute('list')
+    const options = [
+      ...container.querySelectorAll(`datalist[id="${listId}"] option`)
+    ]
+
+    expect(options.map((option) => option.getAttribute('value'))).toContain(
+      'Bench Press'
+    )
+  })
+
+  it('keeps a custom exercise name that is not suggested', () => {
+    render(<ManualProgramCreation />)
+    const input = screen.getByLabelText('Exercise Name')
+
+    fireEvent.change(input, { target: { value: 'My Custom Lift' } })
+
+    expect(input).toHaveProperty('value', 'My Custom Lift')
+  })
 })
