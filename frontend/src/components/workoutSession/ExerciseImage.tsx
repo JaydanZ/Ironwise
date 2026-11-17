@@ -6,40 +6,43 @@ import { sessionImagePanelClass } from './sessionStyles'
 
 export const ExerciseImage = ({ name }: { name: string }) => {
   const artUrl = exerciseArtUrl(name)
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null)
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
-
-  if (!artUrl || artUrl === failedUrl) {
-    return (
-      <div
-        role="img"
-        aria-label={`${name} image placeholder`}
-        className={clsx(sessionImagePanelClass, 'text-neutral-600')}
-      >
-        <Dumbbell aria-hidden className="size-14" strokeWidth={1.5} />
-      </div>
-    )
-  }
-
+  const showArt = artUrl !== null && artUrl === loadedUrl
   const mask = `url("${artUrl}") center / contain no-repeat`
 
   return (
     <div
       role="img"
-      aria-label={`${name} illustration`}
-      className={clsx(sessionImagePanelClass, 'p-2')}
+      aria-label={`${name} ${showArt ? 'illustration' : 'image placeholder'}`}
+      className={clsx(
+        sessionImagePanelClass,
+        showArt ? 'p-2' : 'text-neutral-600'
+      )}
     >
-      {/* A failed CSS mask fires no event, so this probe fetches the same URL in the same CORS mode to detect it */}
-      <img
-        src={artUrl}
-        alt=""
-        hidden
-        crossOrigin="anonymous"
-        onError={() => setFailedUrl(artUrl)}
-      />
-      <div
-        className="size-full bg-neutral-400"
-        style={{ mask, WebkitMask: mask }}
-      />
+      {/* A CSS mask fires no load or error events, so this probe fetches the same URL in the same CORS mode to report both */}
+      {artUrl && artUrl !== failedUrl && (
+        <img
+          src={artUrl}
+          alt=""
+          hidden
+          crossOrigin="anonymous"
+          ref={(img) => {
+            // Cached art is ready now, so show it in this commit instead of flashing the placeholder
+            if (img?.complete && img.naturalWidth > 0) setLoadedUrl(artUrl)
+          }}
+          onLoad={() => setLoadedUrl(artUrl)}
+          onError={() => setFailedUrl(artUrl)}
+        />
+      )}
+      {showArt ? (
+        <div
+          className="size-full bg-neutral-400"
+          style={{ mask, WebkitMask: mask }}
+        />
+      ) : (
+        <Dumbbell aria-hidden className="size-14" strokeWidth={1.5} />
+      )}
     </div>
   )
 }

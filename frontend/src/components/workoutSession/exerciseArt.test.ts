@@ -15,6 +15,8 @@ describe('normaliseExerciseName', () => {
     ['Crunches', 'crunch'],
     ['DB Row', 'dumbbell row'],
     ['Cable Flyes', 'cable fly'],
+    ['Bench Presses', 'bench press'],
+    ['Dumbbell Flies', 'dumbbell fly'],
     ['Bench Press', 'bench press']
   ])('turns %s into %s', (name, expected) => {
     expect(normaliseExerciseName(name)).toBe(expected)
@@ -34,6 +36,16 @@ describe('exerciseArtUrl', () => {
     expect(exerciseArtUrl('Bench Press')).toBe(expected)
     expect(exerciseArtUrl('bench press')).toBe(expected)
     expect(exerciseArtUrl(' BENCH PRESS ')).toBe(expected)
+  })
+
+  it('finds a catalogue name written in the plural', () => {
+    expect(exerciseArtUrl('Bench Presses')).toBe(`${ART_URL}/bench-press.svg`)
+    expect(exerciseArtUrl('Dumbbell Flies')).toBe(`${ART_URL}/dumbbell-fly.svg`)
+  })
+
+  it('ignores a trailing slash on the art host', () => {
+    vi.stubEnv('VITE_EXERCISE_ART_URL', `${ART_URL}/`)
+    expect(exerciseArtUrl('Bench Press')).toBe(`${ART_URL}/bench-press.svg`)
   })
 
   it('uses the reviewed table for names the catalogue words differently', () => {

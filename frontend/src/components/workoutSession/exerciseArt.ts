@@ -10,7 +10,8 @@ const TOKEN_SYNONYMS = new Map([
 ])
 
 const singular = (token: string) => {
-  if (/(ch|sh|x)es$/.test(token)) return token.slice(0, -2)
+  if (/(ss|ch|sh|x)es$/.test(token)) return token.slice(0, -2)
+  if (/[^aeiou]ies$/.test(token)) return token.slice(0, -3) + 'y'
   if (token.length > 2 && token.endsWith('s') && !/(ss|us)$/.test(token)) {
     return token.slice(0, -1)
   }
@@ -72,7 +73,7 @@ for (const [name, id] of REVIEWED_NAMES) {
 }
 
 export const exerciseArtUrl = (name: string) => {
-  const artBaseUrl = import.meta.env.VITE_EXERCISE_ART_URL
+  const artBaseUrl = import.meta.env.VITE_EXERCISE_ART_URL?.replace(/\/+$/, '')
   const id = artIds.get(normaliseExerciseName(name))
   return artBaseUrl && id ? `${artBaseUrl}/${id}.svg` : null
 }

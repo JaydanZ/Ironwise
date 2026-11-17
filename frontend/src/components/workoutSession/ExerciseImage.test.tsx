@@ -14,15 +14,37 @@ describe('ExerciseImage', () => {
   afterEach(() => {
     cleanup()
     vi.unstubAllEnvs()
+    vi.restoreAllMocks()
   })
 
-  it('draws the art for a known exercise', () => {
+  it('shows the placeholder while the art loads', () => {
     const { container } = render(<ExerciseImage name="Bench Press" />)
 
-    screen.getByRole('img', { name: 'Bench Press illustration' })
+    screen.getByRole('img', { name: 'Bench Press image placeholder' })
     expect(probe(container)?.getAttribute('src')).toBe(
       `${ART_URL}/bench-press.svg`
     )
+  })
+
+  it('draws the art once it has loaded', () => {
+    const { container } = render(<ExerciseImage name="Bench Press" />)
+
+    fireEvent.load(probe(container) as HTMLImageElement)
+
+    screen.getByRole('img', { name: 'Bench Press illustration' })
+  })
+
+  it('draws cached art straight away', () => {
+    vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(
+      true
+    )
+    vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(
+      677
+    )
+
+    render(<ExerciseImage name="Bench Press" />)
+
+    screen.getByRole('img', { name: 'Bench Press illustration' })
   })
 
   it('loads the probe in CORS mode, so it fails whenever the mask does', () => {
@@ -51,6 +73,7 @@ describe('ExerciseImage', () => {
     fireEvent.error(probe(container) as HTMLImageElement)
 
     rerender(<ExerciseImage name="Deadlift" />)
+    fireEvent.load(probe(container) as HTMLImageElement)
 
     screen.getByRole('img', { name: 'Deadlift illustration' })
   })

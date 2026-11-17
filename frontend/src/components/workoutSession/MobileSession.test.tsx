@@ -105,7 +105,9 @@ describe('MobileSession', () => {
     }
     render(<Harness plan={plan} />)
     const tip = screen.getByText('Pause at the chest')
-    const image = screen.getByRole('img', { name: /illustration/ })
+    const image = screen.getByRole('img', {
+      name: /(illustration|image placeholder)$/
+    })
     expect(image.compareDocumentPosition(tip)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     )
@@ -473,7 +475,10 @@ describe('MobileSession', () => {
     await nextFrame()
     return transformWhileDragging
   }
-  const image = () => screen.getByRole('img', { name: /illustration/ })
+  const image = () =>
+    screen.getByRole('img', {
+      name: /(illustration|image placeholder)$/
+    })
 
   it('goes to the next exercise on a swipe left', async () => {
     render(<Harness />)
