@@ -2,3 +2,5 @@ aws_region                 = "us-east-1"
 aws_profile                = "ironwise"
 visibility_timeout_seconds = 120
 max_receive_count          = 3
+exercise_art_bucket_name     = "ironwise-exercise-art-<unique-suffix>"
+exercise_art_allowed_origins = ["http://localhost:5173", "https://<production-frontend-origin>"]
