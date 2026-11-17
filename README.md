@@ -31,6 +31,7 @@ Still in active development.
 
 - Log weight and reps set by set, with your last performance shown for each exercise.
 - A focused phone layout that shows one exercise at a time: log each set with large weight and reps controls and one done button, and move to the next exercise automatically. Press and hold the next exercise to jump to any other. Swipe left or right to move through the exercises in order.
+- Exercise illustrations on the phone layout, with a placeholder for exercises that have no drawing.
 - Choose kg or lb for each exercise, remembered for next time, with conversion for comparisons.
 - Drafts saved locally so a refresh doesn't lose a session.
 - End-of-session summary with your logged sets and best set for each exercise.
@@ -60,4 +61,8 @@ Still in active development.
 
 **Backend:** Python, FastAPI, Uvicorn, Pydantic, LangChain, OpenAI, Supabase (PostgreSQL), Redis, Amazon SQS (boto3), PyJWT, argon2-cffi, bcrypt, SlowAPI, Resend, HTTPX, pytest, fakeredis, moto
 
-**Infrastructure:** Docker Compose (with ElasticMQ as local SQS), Terraform (AWS), Nginx, GitHub Actions (Supabase migrations on `main`)
+**Infrastructure:** Docker Compose (with ElasticMQ as local SQS), Terraform (AWS), Amazon S3 (exercise illustrations), Nginx, GitHub Actions (Supabase migrations on `main`)
+
+## Credits
+
+Exercise illustrations: [Open Exercise Art](https://github.com/AlexMollard/Open-Exercise-Art) / Alex Mollard, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Colours changed.

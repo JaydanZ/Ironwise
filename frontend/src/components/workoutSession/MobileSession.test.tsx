@@ -83,11 +83,13 @@ describe('MobileSession', () => {
     window.localStorage.clear()
     submit.mockClear()
     Element.prototype.scrollIntoView = vi.fn()
+    vi.stubEnv('VITE_EXERCISE_ART_URL', 'https://art.test/0f11ea468074')
   })
 
   afterEach(() => {
     cleanup()
     vi.useRealTimers()
+    vi.unstubAllEnvs()
   })
 
   it('sets the session in Inter without Roboto Condensed overriding it', () => {
@@ -103,7 +105,9 @@ describe('MobileSession', () => {
     }
     render(<Harness plan={plan} />)
     const tip = screen.getByText('Pause at the chest')
-    const image = screen.getByRole('img', { name: /image placeholder/ })
+    const image = screen.getByRole('img', {
+      name: /(illustration|image placeholder)$/
+    })
     expect(image.compareDocumentPosition(tip)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     )
@@ -471,7 +475,10 @@ describe('MobileSession', () => {
     await nextFrame()
     return transformWhileDragging
   }
-  const image = () => screen.getByRole('img', { name: /image placeholder/ })
+  const image = () =>
+    screen.getByRole('img', {
+      name: /(illustration|image placeholder)$/
+    })
 
   it('goes to the next exercise on a swipe left', async () => {
     render(<Harness />)
