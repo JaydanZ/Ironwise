@@ -2,6 +2,14 @@
 
 Features added to, changed in, or removed from Ironwise, newest first.
 
+## 2026-11-16
+
+**Added**: Exercise illustrations in the mobile workout session
+
+- **What**: The phone workout screen shows a drawing of the current exercise. Exercises without a matching drawing keep the dumbbell placeholder.
+- **What changed**: `ExerciseImage` draws Open Exercise Art SVGs as CSS masks, using the new `exerciseArt.ts` lookup. The art lives in a public S3 bucket defined in `infra/terraform/s3.tf`, uploaded by `backend/scripts/sync_exercise_art.py`. The frontend build needs the new `VITE_EXERCISE_ART_URL` setting, and the bucket's CORS rule must list each frontend origin. The required credit is in the new `## Credits` section of `README.md`.
+- **What it affects**: `/workout` under 800px. Without `VITE_EXERCISE_ART_URL`, every exercise shows the placeholder. Desktop, the API and stored programs are unchanged.
+
 ## 2026-11-11
 
 **Changed**: Recent records explanation moved into its info tip
