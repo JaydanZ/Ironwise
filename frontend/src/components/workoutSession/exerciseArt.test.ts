@@ -43,6 +43,12 @@ describe('exerciseArtUrl', () => {
     expect(exerciseArtUrl('Dumbbell Flies')).toBe(`${ART_URL}/dumbbell-fly.svg`)
   })
 
+  it('matches a name typed with a curly apostrophe', () => {
+    expect(exerciseArtUrl('Captain’s Chair Knee Raise')).toBe(
+      `${ART_URL}/captain-s-chair-knee-raise.svg`
+    )
+  })
+
   it('ignores a trailing slash on the art host', () => {
     vi.stubEnv('VITE_EXERCISE_ART_URL', `${ART_URL}/`)
     expect(exerciseArtUrl('Bench Press')).toBe(`${ART_URL}/bench-press.svg`)

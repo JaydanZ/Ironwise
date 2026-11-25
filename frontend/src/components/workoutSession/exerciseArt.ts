@@ -21,7 +21,7 @@ const singular = (token: string) => {
 export const normaliseExerciseName = (name: string) =>
   name
     .toLowerCase()
-    .replace(/'/g, '')
+    .replace(/['’]/g, '')
     .split(/[^a-z0-9]+/)
     .filter(Boolean)
     .map((token) => {
