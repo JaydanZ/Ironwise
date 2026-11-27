@@ -13,3 +13,11 @@ output "api_user_name" {
 output "worker_user_name" {
   value = aws_iam_user.worker.name
 }
+
+output "exercise_art_bucket" {
+  value = aws_s3_bucket.exercise_art.bucket
+}
+
+output "exercise_art_origin" {
+  value = "https://${aws_s3_bucket.exercise_art.bucket_regional_domain_name}"
+}

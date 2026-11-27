@@ -21,3 +21,14 @@ variable "max_receive_count" {
   type        = number
   default     = 3
 }
+
+variable "exercise_art_bucket_name" {
+  description = "Globally unique name for the public exercise illustration bucket."
+  type        = string
+}
+
+variable "exercise_art_allowed_origins" {
+  description = "Frontend origins allowed to load the illustrations as CSS masks."
+  type        = list(string)
+  default     = ["http://localhost:5173"]
+}

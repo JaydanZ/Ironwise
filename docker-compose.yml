@@ -20,6 +20,7 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_BACKEND_API_URL=${VITE_BACKEND_API_URL}
+        - VITE_EXERCISE_ART_URL=${VITE_EXERCISE_ART_URL}
     networks:
       - ironwise
     ports:
